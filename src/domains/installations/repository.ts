@@ -1,9 +1,12 @@
 import { createClient } from '@/lib/supabase/client';
+import { serverMutate } from '@/lib/supabase/admin';
+
 import { InstallationTask } from '@/types';
 import { Result, ok, err } from '@/types/result';
 
 export class InstallationRepository {
-  private static supabase = createClient();
+  private static get supabase() { return createClient(); }
+
 
   static async getAll(): Promise<Result<InstallationTask[]>> {
     try {
@@ -19,8 +22,8 @@ export class InstallationRepository {
         serialNumber: item.serial_number || 'ESSMA-UPS-120KVA-88912',
         siteAddress: item.site_address,
         scheduledDate: item.scheduled_date,
-        assignedEngineerId: item.assigned_engineer_id || 'usr-3',
-        assignedEngineerName: 'Amit Kumar',
+        assignedEngineerId: item.assigned_engineer_id || null,
+        assignedEngineerName: item.assigned_engineer_id || 'Unassigned',
         stage: item.stage || 'Commissioning',
         checklist: item.checklist || {
           siteSurveyDone: true,

@@ -1,20 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useCustomers, useCreateCustomer } from '@/hooks/queries/useCustomers';
-import { useEquipment } from '@/hooks/queries/useEquipment';
-import { useInvoices } from '@/hooks/queries/useInvoices';
+import { useCrmStore } from '@/hooks/useCrm';
+import { useAppMutation } from '@/hooks/useAppMutation';
 import { Users, Plus, Building, MapPin, Zap, Search, Phone, Mail } from 'lucide-react';
 import { Modal } from '@/components/shared/Modal';
-import { Database } from '@/types/database.types';
-
-type CustomerRow = Database['public']['Tables']['customers']['Row'];
+import { Customer } from '@/types';
 
 export function CustomersView() {
-  const { data: customers = [], isLoading: isLoadingCustomers } = useCustomers();
-  const { data: equipment = [] } = useEquipment();
-  const { data: invoices = [] } = useInvoices();
-  const createCustomerMutation = useCreateCustomer();
+  const { customers, equipment, invoices, createCustomer, loading: isLoadingCustomers } = useCrmStore();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -32,41 +26,46 @@ export function CustomersView() {
 
   const filteredCustomers = customers.filter(
     (c) =>
-      c.company_name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.customer_code?.toLowerCase().includes(search.toLowerCase()) ||
+      c.companyName?.toLowerCase().includes(search.toLowerCase()) ||
+      c.customerCode?.toLowerCase().includes(search.toLowerCase()) ||
       c.city?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const customerEquipment = equipment.filter((e) => e.customer_id === selectedCustomer?.id);
-  const customerInvoices = invoices.filter((i) => i.customer_id === selectedCustomer?.id);
+  const customerEquipment = equipment.filter((e) => e.customerId === selectedCustomer?.id);
+  const customerInvoices = invoices.filter((i) => i.customerId === selectedCustomer?.id);
 
-  const handleAddSubmit = async (e: React.FormEvent) => {
+  const { mutate: addCustomer, isPending: isSubmitting } = useAppMutation({
+    mutationFn: async () => {
+      const created = await createCustomer({
+        companyName,
+        contactPerson: contactName,
+        email: contactEmail,
+        phone: contactPhone,
+        gstNumber: gstin || '29AAACX99991Z1',
+        customerType: industry,
+        city: city,
+        status: 'Active'
+      });
+      return created;
+    },
+    successMessage: 'Customer account created successfully.',
+    errorMessage: 'Failed to create customer. Please try again.',
+    onSuccess: (created) => {
+      if (created) setSelectedCustomerId(created.id);
+      setShowAddModal(false);
+      setCompanyName('');
+      setGstin('');
+      setIndustry('IT & Data Center');
+      setContactName('');
+      setContactEmail('');
+      setContactPhone('');
+      setCity('Bengaluru');
+    }
+  });
+
+  const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createCustomerMutation.mutate({
-      organization_id: '00000000-0000-0000-0000-000000000000', // To be replaced with auth session org
-      company_name: companyName,
-      customer_code: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
-      gst_number: gstin || '29AAACX99991Z1',
-      customer_type: industry,
-      contact_person: contactName,
-      email: contactEmail,
-      phone: contactPhone,
-      city: city,
-      status: 'active'
-    }, {
-      onSuccess: (data) => {
-        if (data) setSelectedCustomerId(data.id);
-        setShowAddModal(false);
-        // Reset Form
-        setCompanyName('');
-        setGstin('');
-        setIndustry('IT & Data Center');
-        setContactName('');
-        setContactEmail('');
-        setContactPhone('');
-        setCity('Bengaluru');
-      }
-    });
+    addCustomer();
   };
 
   if (isLoadingCustomers) {
@@ -122,12 +121,12 @@ export function CustomersView() {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="text-xs font-bold text-[var(--color-warning)]">{c.customer_code}</div>
-                    <div className="text-xs font-bold text-[var(--color-text-main)]">{c.company_name}</div>
-                    <div className="text-[10px] text-[var(--color-text-muted)]">{c.city} • {c.customer_type}</div>
+                    <div className="text-xs font-bold text-[var(--color-warning)]">{c.customerCode}</div>
+                    <div className="text-xs font-bold text-[var(--color-text-main)]">{c.companyName}</div>
+                    <div className="text-[10px] text-[var(--color-text-muted)]">{c.city} • {c.customerType}</div>
                   </div>
                   <span className="text-[10px] bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[#246BFD]/20 px-1.5 py-0.5 rounded font-bold">
-                    {equipment.filter(e => e.customer_id === c.id).length} Assets
+                    {equipment.filter(e => e.customerId === c.id).length} Assets
                   </span>
                 </div>
               </div>
@@ -147,9 +146,9 @@ export function CustomersView() {
               {/* Account Header */}
               <div className="flex justify-between items-start border-b border-[var(--color-border-subtle)] pb-4">
                 <div>
-                  <div className="text-xs text-[var(--color-text-muted)]">CODE: {selectedCustomer.customer_code}</div>
-                  <h2 className="text-lg font-black text-[var(--color-text-main)] font-heading">{selectedCustomer.company_name}</h2>
-                  <div className="text-xs text-[var(--color-warning)] font-bold">GSTIN: {selectedCustomer.gst_number || 'N/A'}</div>
+                  <div className="text-xs text-[var(--color-text-muted)]">CODE: {selectedCustomer.customerCode}</div>
+                  <h2 className="text-lg font-black text-[var(--color-text-main)] font-heading">{selectedCustomer.companyName}</h2>
+                  <div className="text-xs text-[var(--color-warning)] font-bold">GSTIN: {selectedCustomer.gstNumber || 'N/A'}</div>
                 </div>
                 <span className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs px-2.5 py-1 rounded font-bold uppercase">
                   {selectedCustomer.status || 'Active'}
@@ -164,7 +163,7 @@ export function CustomersView() {
                 <div className="grid grid-cols-2 gap-2 text-[var(--color-text-muted)]">
                   <div className="flex items-center gap-1.5">
                     <Building className="w-3.5 h-3.5 text-[var(--color-warning)]" />
-                    <span>Contact: <strong className="text-[var(--color-text-main)]">{selectedCustomer.contact_person || 'N/A'}</strong></span>
+                    <span>Contact: <strong className="text-[var(--color-text-main)]">{selectedCustomer.contactPerson || 'N/A'}</strong></span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-[var(--color-primary)]" />
@@ -191,7 +190,7 @@ export function CustomersView() {
                   {customerEquipment.map((eq) => (
                     <div key={eq.id} className="glass-panel p-2.5 rounded border border-[var(--color-border-subtle)] flex justify-between items-center text-[11px] shadow-xs">
                       <div>
-                        <div className="font-bold text-[var(--color-warning)]">{eq.serial_number}</div>
+                        <div className="font-bold text-[var(--color-warning)]">{eq.serialNumber}</div>
                         <div className="text-[var(--color-text-main)]">{eq.model} - {eq.brand}</div>
                       </div>
                       <span className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] px-1.5 py-0.5 rounded font-bold">
@@ -309,10 +308,10 @@ export function CustomersView() {
             </button>
             <button
               type="submit"
-              disabled={createCustomerMutation.isPending}
+              disabled={isSubmitting}
               className="btn-primary px-6 py-2 text-sm disabled:opacity-50"
             >
-              {createCustomerMutation.isPending ? 'Creating...' : 'Create Account'}
+              {isSubmitting ? 'Creating...' : 'Create Account'}
             </button>
           </div>
         </form>

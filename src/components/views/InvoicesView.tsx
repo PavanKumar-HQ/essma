@@ -21,7 +21,7 @@ export function InvoicesView() {
   const filtered = invoices.filter(
     (i) =>
       i.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
-      i.customerName.toLowerCase().includes(search.toLowerCase())
+      (i.customerName || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const subtotal = items.reduce((acc, item) => acc + item.total, 0);
@@ -55,14 +55,13 @@ export function InvoicesView() {
   const handleExportXlsx = () => {
     const sheetData = invoices.map((inv) => ({
       'Invoice Number': inv.invoiceNumber,
-      'Type': inv.invoiceType,
       'Customer': inv.customerName,
-      'Issue Date': inv.issueDate,
+      'Issue Date': inv.invoiceDate,
       'Due Date': inv.dueDate,
       'Subtotal': inv.subtotal,
-      'Tax Amount': inv.totalTax,
-      'Grand Total': inv.grandTotal,
-      'Payment Status': inv.paymentStatus
+      'Tax Amount': inv.taxAmount,
+      'Total Amount': inv.totalAmount,
+      'Payment Status': inv.status
     }));
     const worksheet = XLSX.utils.json_to_sheet(sheetData);
     const workbook = XLSX.utils.book_new();
@@ -76,19 +75,19 @@ export function InvoicesView() {
 
     const newInvoice = await createInvoice({
       customerId,
-      customerName: cust?.companyName || 'Apex Data Technologies',
-      gstin: cust?.gstin || '29AAACA12341Z5',
-      invoiceType,
-      items,
-      subtotal,
-      cgstAmount: totalTax / 2,
-      sgstAmount: totalTax / 2,
-      igstAmount: 0,
-      totalTax,
-      grandTotal,
-      issueDate: new Date().toISOString().substring(0, 10),
+      invoiceDate: new Date().toISOString().substring(0, 10),
       dueDate: new Date(Date.now() + 15 * 86400000).toISOString().substring(0, 10),
-      paymentStatus: 'Pending'
+      subtotal,
+      taxAmount: totalTax,
+      discount: 0,
+      totalAmount: grandTotal,
+      amountPaid: 0,
+      balanceAmount: grandTotal,
+      status: 'Unpaid',
+      notes: null,
+      serviceTicketId: null,
+      amcId: null,
+      customerName: cust?.companyName || 'Apex Data Technologies'
     });
     if (newInvoice) setSelectedInvoice(newInvoice);
     setShowCreateModal(false);
@@ -156,17 +155,17 @@ export function InvoicesView() {
                   </div>
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                      inv.paymentStatus === 'Paid'
+                      inv.status === 'Paid'
                         ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                         : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[#FF7A00]/20'
                     }`}
                   >
-                    {inv.paymentStatus}
+                    {inv.status}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-[10px] text-[var(--color-text-muted)] mt-2">
                   <span>Due: {inv.dueDate}</span>
-                  <span className="font-bold text-emerald-500">₹{inv.grandTotal.toLocaleString('en-IN')}</span>
+                  <span className="font-bold text-emerald-500">₹{(inv.totalAmount || 0).toLocaleString('en-IN')}</span>
                 </div>
               </div>
             ))}
@@ -181,34 +180,34 @@ export function InvoicesView() {
                 <div>
                   <div className="text-base font-black text-emerald-500 font-heading">TAX INVOICE</div>
                   <div className="text-xs text-[var(--color-text-main)] font-bold">{selectedInvoice.customerName}</div>
-                  <div className="text-[10px] text-[var(--color-text-muted)]">GSTIN: {selectedInvoice.gstin}</div>
+                  <div className="text-[10px] text-[var(--color-text-muted)]">GSTIN: {customers.find(c => c.id === selectedInvoice.customerId)?.gstNumber || 'N/A'}</div>
                 </div>
 
                 <div className="text-right">
                   <div className="text-sm font-bold text-[var(--color-warning)]">{selectedInvoice.invoiceNumber}</div>
-                  <div className="text-[10px] text-[var(--color-text-muted)]">Issue Date: {selectedInvoice.issueDate}</div>
+                  <div className="text-[10px] text-[var(--color-text-muted)]">Issue Date: {selectedInvoice.invoiceDate}</div>
                   <div className="text-[10px] text-[var(--color-text-muted)]">Due Date: {selectedInvoice.dueDate}</div>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="font-bold text-[var(--color-text-muted)] uppercase text-[10px]">Invoice Line Items</div>
-                {selectedInvoice.items.map((item, idx) => (
+                {(selectedInvoice.invoiceItems || []).map((item: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-center glass-panel p-2.5 rounded border border-[var(--color-border-subtle)] text-xs shadow-xs">
                     <div>
-                      <div className="font-bold text-[var(--color-text-main)]">{item.description}</div>
-                      <div className="text-[10px] text-[var(--color-text-muted)]">Qty: {item.quantity} × ₹{item.unitPrice.toLocaleString('en-IN')}</div>
+                      <div className="font-bold text-[var(--color-text-main)]">{item.description || item.item_description || 'Item'}</div>
+                      <div className="text-[10px] text-[var(--color-text-muted)]">Qty: {item.quantity} × ₹{(item.unitPrice || item.unit_price || 0).toLocaleString('en-IN')}</div>
                     </div>
-                    <div className="font-bold text-emerald-500">₹{item.total.toLocaleString('en-IN')}</div>
+                    <div className="font-bold text-emerald-500">₹{(item.total || item.total_price || 0).toLocaleString('en-IN')}</div>
                   </div>
                 ))}
               </div>
 
               <div className="glass-panel p-3 rounded border border-[var(--color-border-subtle)] space-y-1 text-right text-xs">
-                <div>Subtotal: ₹{selectedInvoice.subtotal.toLocaleString('en-IN')}</div>
-                <div>CGST + SGST (18%): ₹{selectedInvoice.totalTax.toLocaleString('en-IN')}</div>
+                <div>Subtotal: ₹{(selectedInvoice.subtotal || 0).toLocaleString('en-IN')}</div>
+                <div>CGST + SGST (18%): ₹{(selectedInvoice.taxAmount || 0).toLocaleString('en-IN')}</div>
                 <div className="text-sm font-black text-emerald-500 border-t border-[var(--color-border-subtle)] pt-1 mt-1">
-                  Grand Total: ₹{selectedInvoice.grandTotal.toLocaleString('en-IN')}
+                  Grand Total: ₹{(selectedInvoice.totalAmount || 0).toLocaleString('en-IN')}
                 </div>
               </div>
             </div>

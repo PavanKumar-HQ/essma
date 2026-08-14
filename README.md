@@ -100,3 +100,4 @@ ESSMA OS is designed to be deployed with:
 - **Backend**: Supabase Cloud (Managed PostgreSQL).
 
 Ensure all environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are set in your deployment environment.
+remo

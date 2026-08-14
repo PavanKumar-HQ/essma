@@ -31,7 +31,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-base)] text-[var(--color-text-main)] flex flex-col font-sans selection:bg-[var(--color-primary)] selection:text-white">
+    <div className="h-screen bg-[var(--color-surface-base)] text-[var(--color-text-main)] flex flex-col font-sans selection:bg-[var(--color-primary)] selection:text-white overflow-hidden">
       {/* Top Header */}
       <Header
         onOpenCommandPalette={() => setIsCommandOpen(true)}
@@ -43,7 +43,7 @@ export default function Home() {
         <Sidebar activeTab={activeTab} onSelectTab={(tab) => setActiveTab(tab)} />
 
         {/* Main Content Workspace */}
-        <main className="flex-1 h-[calc(100vh-4rem)] bg-transparent overflow-y-auto p-4 sm:p-6 scrollbar-hide">
+        <main className="flex-1 h-full bg-transparent overflow-y-auto p-4 sm:p-6 scrollbar-hide">
           {activeTab === 'dashboard' && <DashboardView onNavigate={(t) => setActiveTab(t)} />}
           {activeTab === 'customers' && <CustomersView />}
           {activeTab === 'leads' && <LeadsView />}

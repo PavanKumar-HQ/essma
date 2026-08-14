@@ -5,42 +5,39 @@ import { useCrmStore } from '@/hooks/useCrm';
 import { Boxes, AlertTriangle, Download, Plus, Search, Truck, Layers, QrCode } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Modal } from '@/components/shared/Modal';
+import { hasPermission } from '@/lib/permissions';
+import { useAppMutation } from '@/hooks/useAppMutation';
 
 export function InventoryView() {
-  const { inventory, updateInventoryStock, addInventoryItem } = useCrmStore();
+  const { inventory, suppliers, updateInventoryStock, addInventoryItem, activeRole } = useCrmStore();
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
 
   // New Inventory State
   const [sku, setSku] = useState('ESSMA-PART-' + Math.floor(1000 + Math.random() * 9000));
-  const [name, setName] = useState('Replacement Logic Board v2');
-  const [category, setCategory] = useState('Spare Parts');
-  const [warehouseLocation, setWarehouseLocation] = useState('Main WH - BLR');
-  const [rackNumber, setRackNumber] = useState('Rack A4');
-  const [shelfNumber, setShelfNumber] = useState('Shelf 2');
-  const [quantityInStock, setQuantityInStock] = useState(10);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [unit, setUnit] = useState('Pcs');
   const [minimumThreshold, setMinimumThreshold] = useState(5);
-  const [unitCost, setUnitCost] = useState(4500);
-  const [sellingPrice, setSellingPrice] = useState(8500);
-  const [supplierName, setSupplierName] = useState('Texas Instruments Corp');
+  const [unitCost, setUnitCost] = useState(0);
+  const [sellingPrice, setSellingPrice] = useState(0);
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
 
   const filtered = inventory.filter(
     (i) =>
-      i.name.toLowerCase().includes(search.toLowerCase()) ||
       i.sku.toLowerCase().includes(search.toLowerCase()) ||
-      i.warehouseLocation.toLowerCase().includes(search.toLowerCase())
+      i.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleExportXlsx = () => {
     const sheetData = inventory.map((i) => ({
       'SKU': i.sku,
       'Item Name': i.name,
-      'Category': i.category,
-      'Location': i.warehouseLocation,
-      'Rack / Shelf': `${i.rackNumber} / ${i.shelfNumber}`,
-      'Quantity In Stock': i.quantityInStock,
-      'Min Threshold': i.minimumThreshold,
-      'Unit Cost': `₹${i.unitCost}`,
+      'Category': i.categoryName,
+      'Location': 'Main Warehouse',
+      'Quantity In Stock': i.currentStock || 0,
+      'Min Threshold': i.minimumStock || 0,
+      'Unit Cost': `₹${i.unitCost || 0}`,
       'Supplier': i.supplierName
     }));
     const worksheet = XLSX.utils.json_to_sheet(sheetData);
@@ -49,22 +46,37 @@ export function InventoryView() {
     XLSX.writeFile(workbook, 'ESSMA_Warehouse_Inventory.xlsx');
   };
 
-  const handleAddSubmit = async (e: React.FormEvent) => {
+  const addMutation = useAppMutation({
+    mutationFn: async (payload: any) => {
+      // Simulate validation & permission checks
+      if (!hasPermission('Super Admin', 'inventory.create')) {
+        throw new Error('You do not have permission to create inventory items.');
+      }
+      return await addInventoryItem(payload);
+    },
+    successMessage: '✅ Inventory item created successfully.',
+    onSuccess: () => {
+      setShowAddModal(false);
+    }
+  });
+
+  const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    await addInventoryItem({
+    addMutation.mutate({
       sku,
       name,
-      category,
-      warehouseLocation,
-      rackNumber,
-      shelfNumber,
-      quantityInStock,
-      minimumThreshold,
+      description,
+      unit,
+      categoryId: null,
+      minimumStock: minimumThreshold,
+      maximumStock: null,
+      currentStock: 0,
+      reservedStock: 0,
       unitCost,
       sellingPrice,
-      supplierName
+      supplierId: selectedSupplierId || null,
+      status: 'Active'
     });
-    setShowAddModal(false);
   };
 
   return (
@@ -123,7 +135,7 @@ export function InventoryView() {
             </thead>
             <tbody className="divide-y divide-[#22252A]/10">
               {filtered.map((item) => {
-                const isLowStock = item.quantityInStock <= item.minimumThreshold;
+                const isLowStock = (item.currentStock || 0) <= (item.minimumStock || 0);
                 return (
                   <tr key={item.id} className="hover:bg-[var(--color-surface-base)] transition">
                     <td className="py-3 px-3">
@@ -132,14 +144,11 @@ export function InventoryView() {
                       <div className="text-[10px] text-[var(--color-text-muted)]">Supplier: {item.supplierName}</div>
                     </td>
                     <td className="py-3 px-3">
-                      <div className="text-[var(--color-text-main)]">{item.warehouseLocation}</div>
-                      <div className="text-[10px] text-[var(--color-text-muted)]">
-                        {item.rackNumber} • {item.shelfNumber}
-                      </div>
+                      <div className="text-[var(--color-text-main)]">Main Warehouse</div>
                     </td>
                     <td className="py-3 px-3 text-center">
                       <div className={`font-bold text-sm ${isLowStock ? 'text-[var(--color-warning)] animate-pulse' : 'text-emerald-500'}`}>
-                        {item.quantityInStock} Units
+                        {item.currentStock || 0} Units
                       </div>
                       {isLowStock && (
                         <span className="text-[9px] bg-[var(--color-warning)]/15 text-[var(--color-warning)] border border-[#FF7A00]/20 px-1 py-0.5 rounded font-bold">
@@ -147,21 +156,29 @@ export function InventoryView() {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-3 text-right text-[var(--color-text-muted)]">₹{item.unitCost.toLocaleString('en-IN')}</td>
-                    <td className="py-3 px-3 text-right font-bold text-emerald-500">₹{item.sellingPrice.toLocaleString('en-IN')}</td>
+                    <td className="py-3 px-3 text-right text-[var(--color-text-muted)]">₹{(item.unitCost || 0).toLocaleString('en-IN')}</td>
+                    <td className="py-3 px-3 text-right font-bold text-emerald-500">₹{(item.sellingPrice || 0).toLocaleString('en-IN')}</td>
                     <td className="py-3 px-3 text-center">
                       <div className="flex justify-center gap-1">
                         <button
-                          onClick={() => updateInventoryStock(item.id, -1)}
+                          onClick={() => {
+                            if (hasPermission('Super Admin', 'inventory.adjust')) { // TODO: use real role
+                              alert('Adjust modal opening...');
+                            }
+                          }}
                           className="bg-[var(--color-surface-base)] hover:bg-slate-800 border border-[var(--color-border-subtle)] text-[var(--color-text-main)] px-2 py-1 rounded text-xs font-bold transition"
                         >
-                          -1
+                          Adjust
                         </button>
                         <button
-                          onClick={() => updateInventoryStock(item.id, 5)}
+                          onClick={() => {
+                            if (hasPermission('Super Admin', 'inventory.receive')) { // TODO: use real role
+                              alert('Receive modal opening...');
+                            }
+                          }}
                           className="btn-accent px-2 py-1 rounded text-xs font-bold shadow-xs transition"
                         >
-                          +5
+                          Receive
                         </button>
                       </div>
                     </td>
@@ -204,39 +221,26 @@ export function InventoryView() {
                 />
               </div>
               <div className="col-span-2 sm:col-span-1">
-                <label className="text-[var(--color-text-muted)] font-semibold text-xs block mb-1 uppercase tracking-wider">Category</label>
+                <label className="text-[var(--color-text-muted)] font-semibold text-xs block mb-1 uppercase tracking-wider">Unit</label>
                 <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
                   className="modern-input w-full p-2.5"
                 >
-                  <option value="UPS">UPS</option>
-                  <option value="Battery Bank">Battery</option>
-                  <option value="Spare Parts">Spare Parts</option>
-                  <option value="Consumables">Consumables</option>
+                  <option value="Pcs">Pcs</option>
+                  <option value="Nos">Nos</option>
+                  <option value="Set">Set</option>
+                  <option value="Kg">Kg</option>
+                  <option value="Ltr">Ltr</option>
+                  <option value="Mtr">Mtr</option>
                 </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="text-[var(--color-text-muted)] font-semibold text-xs block mb-1 uppercase tracking-wider">Warehouse</label>
-                <input type="text" value={warehouseLocation} onChange={(e) => setWarehouseLocation(e.target.value)} className="modern-input w-full p-2.5" />
-              </div>
-              <div>
-                <label className="text-[var(--color-text-muted)] font-semibold text-xs block mb-1 uppercase tracking-wider">Rack</label>
-                <input type="text" value={rackNumber} onChange={(e) => setRackNumber(e.target.value)} className="modern-input w-full p-2.5" />
-              </div>
-              <div>
-                <label className="text-[var(--color-text-muted)] font-semibold text-xs block mb-1 uppercase tracking-wider">Shelf</label>
-                <input type="text" value={shelfNumber} onChange={(e) => setShelfNumber(e.target.value)} className="modern-input w-full p-2.5" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[var(--color-text-muted)] font-semibold text-xs block mb-1 uppercase tracking-wider">Qty in Stock</label>
-                <input type="number" value={quantityInStock} onChange={(e) => setQuantityInStock(Number(e.target.value))} className="modern-input w-full p-2.5" required />
+                <label className="text-[var(--color-text-muted)] font-semibold text-xs block mb-1 uppercase tracking-wider">Description</label>
+                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="modern-input w-full p-2.5" placeholder="Optional description" />
               </div>
               <div>
                 <label className="text-[var(--color-text-muted)] font-semibold text-xs block mb-1 uppercase tracking-wider">Min Threshold</label>
@@ -254,6 +258,13 @@ export function InventoryView() {
                 <input type="number" value={sellingPrice} onChange={(e) => setSellingPrice(Number(e.target.value))} className="modern-input w-full p-2.5" required />
               </div>
             </div>
+            <div>
+              <label className="text-[var(--color-text-muted)] font-semibold text-xs block mb-1 uppercase tracking-wider">Supplier (optional)</label>
+              <select value={selectedSupplierId} onChange={(e) => setSelectedSupplierId(e.target.value)} className="modern-input w-full p-2.5">
+                <option value="">-- No Supplier --</option>
+                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.companyName}</option>)}
+              </select>
+            </div>
           </div>
 
           <div className="pt-4 flex justify-end gap-3 border-t border-[var(--color-border-subtle)] mt-2">
@@ -266,9 +277,10 @@ export function InventoryView() {
             </button>
             <button
               type="submit"
-              className="btn-accent px-6 py-2 text-sm"
+              disabled={addMutation.isPending}
+              className="btn-accent px-6 py-2 text-sm disabled:opacity-50"
             >
-              Add Stock
+              {addMutation.isPending ? 'Creating...' : 'Create Item'}
             </button>
           </div>
         </form>

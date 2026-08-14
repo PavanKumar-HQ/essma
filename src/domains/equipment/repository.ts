@@ -1,43 +1,41 @@
 import { createClient } from '@/lib/supabase/client';
+import { serverMutate } from '@/lib/supabase/admin';
 import { Equipment } from '@/types';
 import { Result, ok, err } from '@/types/result';
 
 export class EquipmentRepository {
-  private static supabase = createClient();
+  private static get supabase() { return createClient(); }
 
   static async getAll(): Promise<Result<Equipment[]>> {
     try {
       const { data, error } = await this.supabase
         .from('equipment')
-        .select('*')
+        .select('*, customers(company_name)')
         .order('created_at', { ascending: false });
 
       if (error) return err(new Error(error.message));
 
-      const equipment: Equipment[] = (data || []).map((item: Record<string, any>) => ({
+      const equipment: Equipment[] = (data || []).map((item: any) => ({
         id: item.id,
-        serialNumber: item.serial_number,
-        modelName: item.model_name,
-        category: item.category,
-        capacityKva: item.capacity_kva,
-        capacityKw: item.capacity_kw,
-        phase: item.phase,
-        batteryType: item.battery_type,
-        batteryQuantity: item.battery_quantity,
         customerId: item.customer_id,
-        customerName: item.customer_name || 'Customer Account',
-        branchId: item.branch_id || 'br-1',
-        siteAddress: item.site_address,
-        city: item.city,
+        equipmentCode: item.equipment_code,
+        equipmentType: item.equipment_type,
+        brand: item.brand,
+        model: item.model,
+        serialNumber: item.serial_number,
+        capacity: item.capacity,
+        location: item.location,
         installationDate: item.installation_date,
-        warrantyStartDate: item.warranty_start_date,
-        warrantyEndDate: item.warranty_end_date,
-        warrantyStatus: item.warranty_status,
-        amcStatus: item.amc_status,
-        healthScore: item.health_score,
-        lastInspectionDate: item.last_inspection_date,
-        nextMaintenanceDueDate: item.next_maintenance_due_date,
-        qrCodeUrl: item.qr_code_url
+        warrantyStart: item.warranty_start,
+        warrantyEnd: item.warranty_end,
+        lastServiceDate: item.last_service_date,
+        nextServiceDate: item.next_service_date,
+        status: item.status,
+        condition: item.condition,
+        notes: item.notes,
+        assetNumber: item.asset_number,
+        purchaseDate: item.purchase_date,
+        customerName: item.customers?.company_name
       }));
 
       return ok(equipment);
@@ -46,58 +44,59 @@ export class EquipmentRepository {
     }
   }
 
-  static async create(eq: Omit<Equipment, 'id' | 'qrCodeUrl'>): Promise<Result<Equipment>> {
+  static async create(eq: Omit<Equipment, 'id' | 'equipmentCode'>): Promise<Result<Equipment>> {
     try {
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(eq.serialNumber)}`;
-      const { data, error } = await this.supabase
-        .from('equipment')
-        .insert({
-          serial_number: eq.serialNumber,
-          model_name: eq.modelName,
-          category: eq.category,
-          capacity_kva: eq.capacityKva,
-          capacity_kw: eq.capacityKw,
-          phase: eq.phase,
-          battery_type: eq.batteryType,
-          battery_quantity: eq.batteryQuantity,
+      const equipment_code = `EQ-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const { data, error } = await serverMutate.insert({
+        table: 'equipment',
+        payload: {
+          equipment_code,
           customer_id: eq.customerId,
-          site_address: eq.siteAddress,
-          city: eq.city,
+          equipment_type: eq.equipmentType,
+          brand: eq.brand,
+          model: eq.model,
+          serial_number: eq.serialNumber,
+          capacity: eq.capacity,
+          location: eq.location,
           installation_date: eq.installationDate,
-          warranty_status: eq.warrantyStatus,
-          amc_status: eq.amcStatus,
-          health_score: eq.healthScore,
-          qr_code_url: qrCodeUrl
-        })
-        .select()
-        .single();
+          warranty_start: eq.warrantyStart,
+          warranty_end: eq.warrantyEnd,
+          last_service_date: eq.lastServiceDate,
+          next_service_date: eq.nextServiceDate,
+          status: eq.status,
+          condition: eq.condition,
+          notes: eq.notes,
+          asset_number: eq.assetNumber,
+          purchase_date: eq.purchaseDate,
+        },
+        select: '*, customers(company_name)'
+      });
 
-      if (error) return err(new Error(error.message));
+      if (error) return err(new Error(error));
 
+      const d: any = data;
       const created: Equipment = {
-        id: data.id,
-        serialNumber: data.serial_number,
-        modelName: data.model_name,
-        category: data.category,
-        capacityKva: data.capacity_kva,
-        capacityKw: data.capacity_kw,
-        phase: data.phase,
-        batteryType: data.battery_type,
-        batteryQuantity: data.battery_quantity,
-        customerId: data.customer_id,
-        customerName: eq.customerName,
-        branchId: data.branch_id || 'br-1',
-        siteAddress: data.site_address,
-        city: data.city,
-        installationDate: data.installation_date,
-        warrantyStartDate: data.warranty_start_date,
-        warrantyEndDate: data.warranty_end_date,
-        warrantyStatus: data.warranty_status,
-        amcStatus: data.amc_status,
-        healthScore: data.health_score,
-        lastInspectionDate: data.last_inspection_date,
-        nextMaintenanceDueDate: data.next_maintenance_due_date,
-        qrCodeUrl: data.qr_code_url
+        id: d.id,
+        customerId: d.customer_id,
+        equipmentCode: d.equipment_code,
+        equipmentType: d.equipment_type,
+        brand: d.brand,
+        model: d.model,
+        serialNumber: d.serial_number,
+        capacity: d.capacity,
+        location: d.location,
+        installationDate: d.installation_date,
+        warrantyStart: d.warranty_start,
+        warrantyEnd: d.warranty_end,
+        lastServiceDate: d.last_service_date,
+        nextServiceDate: d.next_service_date,
+        status: d.status,
+        condition: d.condition,
+        notes: d.notes,
+        assetNumber: d.asset_number,
+        purchaseDate: d.purchase_date,
+        customerName: d.customers?.company_name || eq.customerName
       };
 
       return ok(created);

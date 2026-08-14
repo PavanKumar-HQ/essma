@@ -20,7 +20,7 @@ export function QrScannerModal({ isOpen, onClose, onSelectEquipment }: QrScanner
 
   const handleSearch = () => {
     const matched = equipment.find(
-      (e) => e.serialNumber.toLowerCase() === scannedSerial.trim().toLowerCase()
+      (e) => (e.serialNumber || '').toLowerCase() === scannedSerial.trim().toLowerCase()
     );
     setFoundEquipment(matched || null);
   };
@@ -67,12 +67,12 @@ export function QrScannerModal({ isOpen, onClose, onSelectEquipment }: QrScanner
                 <button
                   key={eq.id}
                   onClick={() => {
-                    setScannedSerial(eq.serialNumber);
+                    setScannedSerial(eq.serialNumber || '');
                     setFoundEquipment(eq);
                   }}
                   className="bg-slate-800 hover:bg-slate-700 text-[10px] px-2 py-1 rounded text-slate-300 border border-slate-700"
                 >
-                  {eq.serialNumber}
+                  {eq.serialNumber || 'No Serial'}
                 </button>
               ))}
             </div>
@@ -83,32 +83,32 @@ export function QrScannerModal({ isOpen, onClose, onSelectEquipment }: QrScanner
             <div className="bg-slate-950 border border-amber-500/30 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="text-xs font-bold text-amber-400">{foundEquipment.modelName}</div>
+                  <div className="text-xs font-bold text-amber-400">{foundEquipment.model}</div>
                   <div className="text-[11px] text-slate-400">SN: {foundEquipment.serialNumber}</div>
                   <div className="text-[11px] text-slate-400">{foundEquipment.customerName}</div>
                 </div>
                 <div className="p-2 bg-white rounded">
-                  <QRCodeSVG value={foundEquipment.serialNumber} size={64} />
+                  <QRCodeSVG value={foundEquipment.serialNumber || ''} size={64} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 <div className="bg-slate-900 p-2 rounded border border-slate-800">
-                  <span className="text-slate-500">Health Index:</span>
+                  <span className="text-slate-500">Condition:</span>
                   <div className="font-bold text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> {foundEquipment.healthScore}% Operational
+                    <CheckCircle2 className="w-3 h-3" /> {foundEquipment.condition}
                   </div>
                 </div>
                 <div className="bg-slate-900 p-2 rounded border border-slate-800">
-                  <span className="text-slate-500">AMC Status:</span>
-                  <div className="font-bold text-amber-400">{foundEquipment.amcStatus}</div>
+                  <span className="text-slate-500">Status:</span>
+                  <div className="font-bold text-amber-400">{foundEquipment.status}</div>
                 </div>
               </div>
 
               <div className="text-[11px] text-slate-400 space-y-1">
-                <div>• Capacity: <span className="text-slate-200">{foundEquipment.capacityKva} kVA ({foundEquipment.phase})</span></div>
-                <div>• Installed Battery: <span className="text-slate-200">{foundEquipment.batteryType} ({foundEquipment.batteryQuantity} Nos)</span></div>
-                <div>• Next PM Due: <span className="text-amber-400">{foundEquipment.nextMaintenanceDueDate}</span></div>
+                <div>• Capacity: <span className="text-slate-200">{foundEquipment.capacity}</span></div>
+                <div>• Notes: <span className="text-slate-200">{foundEquipment.notes}</span></div>
+                <div>• Next PM Due: <span className="text-amber-400">{foundEquipment.nextServiceDate}</span></div>
               </div>
             </div>
           )}

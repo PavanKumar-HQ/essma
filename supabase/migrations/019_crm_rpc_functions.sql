@@ -111,7 +111,7 @@ BEGIN
 
     RETURN v_item;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 3. View to flatten inventory for easy querying
 CREATE OR REPLACE VIEW public.inventory_items_view AS

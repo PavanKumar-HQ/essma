@@ -1,39 +1,38 @@
 import { createClient } from '@/lib/supabase/client';
+import { serverMutate } from '@/lib/supabase/admin';
 import { Invoice } from '@/types';
 import { Result, ok, err } from '@/types/result';
 
 export class FinanceRepository {
-  private static supabase = createClient();
+  private static get supabase() { return createClient(); }
 
   static async getInvoices(): Promise<Result<Invoice[]>> {
     try {
       const { data, error } = await this.supabase
         .from('invoices')
-        .select('*')
+        .select('*, customers(company_name), invoice_items(*)')
         .order('created_at', { ascending: false });
 
       if (error) return err(new Error(error.message));
 
-      const invoices: Invoice[] = (data || []).map((item: Record<string, any>) => ({
+      const invoices: Invoice[] = (data || []).map((item: any) => ({
         id: item.id,
         invoiceNumber: item.invoice_number,
-        invoiceType: item.invoice_type,
         customerId: item.customer_id,
-        customerName: item.customer_name,
-        gstin: item.gstin,
-        issueDate: item.issue_date,
+        invoiceDate: item.invoice_date,
         dueDate: item.due_date,
-        items: item.items || [],
         subtotal: item.subtotal,
-        cgst: item.total_tax / 2,
-        sgst: item.total_tax / 2,
-        igst: 0,
-        totalTax: item.total_tax,
-        grandTotal: item.grand_total,
-        paidAmount: item.paid_amount,
-        balanceDue: item.grand_total - item.paid_amount,
-        paymentStatus: item.payment_status,
-        pdfUrl: item.pdf_url
+        taxAmount: item.tax_amount,
+        discount: item.discount,
+        totalAmount: item.total_amount,
+        amountPaid: item.amount_paid,
+        balanceAmount: item.balance_amount,
+        status: item.status,
+        notes: item.notes,
+        serviceTicketId: item.service_ticket_id,
+        amcId: item.amc_id,
+        customerName: item.customers?.company_name,
+        invoiceItems: item.invoice_items || []
       }));
 
       return ok(invoices);
@@ -45,47 +44,48 @@ export class FinanceRepository {
   static async createInvoice(inv: Omit<Invoice, 'id' | 'invoiceNumber'>): Promise<Result<Invoice>> {
     try {
       const invoiceNumber = `ESSMA-INV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-      const { data, error } = await this.supabase
-        .from('invoices')
-        .insert({
+
+      const { data, error } = await serverMutate.insert({
+        table: 'invoices',
+        payload: {
           invoice_number: invoiceNumber,
-          invoice_type: inv.invoiceType,
           customer_id: inv.customerId,
-          customer_name: inv.customerName,
-          gstin: inv.gstin,
-          issue_date: inv.issueDate,
+          invoice_date: inv.invoiceDate,
           due_date: inv.dueDate,
-          items: inv.items,
           subtotal: inv.subtotal,
-          total_tax: inv.totalTax,
-          grand_total: inv.grandTotal,
-          paid_amount: inv.paidAmount ?? 0,
-          payment_status: inv.paymentStatus
-        })
-        .select()
-        .single();
+          tax_amount: inv.taxAmount,
+          discount: inv.discount,
+          total_amount: inv.totalAmount,
+          amount_paid: inv.amountPaid ?? 0,
+          balance_amount: inv.balanceAmount,
+          status: inv.status,
+          notes: inv.notes,
+          service_ticket_id: inv.serviceTicketId,
+          amc_id: inv.amcId
+        },
+        select: '*, customers(company_name)'
+      });
 
-      if (error) return err(new Error(error.message));
+      if (error) return err(new Error(error));
 
+      const d: any = data;
       const created: Invoice = {
-        id: data.id,
-        invoiceNumber: data.invoice_number,
-        invoiceType: data.invoice_type,
-        customerId: data.customer_id,
-        customerName: data.customer_name,
-        gstin: data.gstin,
-        issueDate: data.issue_date,
-        dueDate: data.due_date,
-        items: inv.items,
-        subtotal: data.subtotal,
-        cgst: data.total_tax / 2,
-        sgst: data.total_tax / 2,
-        igst: 0,
-        totalTax: data.total_tax,
-        grandTotal: data.grand_total,
-        paidAmount: data.paid_amount,
-        balanceDue: data.grand_total - data.paid_amount,
-        paymentStatus: data.payment_status
+        id: d.id,
+        invoiceNumber: d.invoice_number,
+        customerId: d.customer_id,
+        invoiceDate: d.invoice_date,
+        dueDate: d.due_date,
+        subtotal: d.subtotal,
+        taxAmount: d.tax_amount,
+        discount: d.discount,
+        totalAmount: d.total_amount,
+        amountPaid: d.amount_paid,
+        balanceAmount: d.balance_amount,
+        status: d.status,
+        notes: d.notes,
+        serviceTicketId: d.service_ticket_id,
+        amcId: d.amc_id,
+        customerName: d.customers?.company_name || inv.customerName
       };
 
       return ok(created);

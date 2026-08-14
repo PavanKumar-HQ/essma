@@ -28,14 +28,14 @@ export function QuotationsView() {
     try {
       await updateQuotationStatus(selectedQuote.id, 'Converted to Order');
       toast.success(`Quote ${selectedQuote.quoteNumber} converted to Sales Order!`);
-      setSelectedQuote({ ...selectedQuote, status: 'Converted to Order' });
+      setSelectedQuote(null); // Clear it so it disappears from the detail pane
     } catch (e) {
       toast.error('Failed to convert quote to order.');
     }
   };
 
   // New Quote Builder State
-  const [customerId, setCustomerId] = useState(customers[0]?.id || 'cust-101');
+  const [customerId, setCustomerId] = useState(customers[0]?.id || '11111111-1111-1111-1111-111111111111');
   const [discountPercent, setDiscountPercent] = useState(5);
   const [items, setItems] = useState<QuotationItem[]>([
     {
@@ -95,7 +95,7 @@ export function QuotationsView() {
       version: 1,
       customerId,
       customerName: cust?.companyName || 'Apex Data Technologies',
-      gstin: cust?.gstin || '29AAACA12341Z5',
+      gstin: cust?.gstNumber || '29AAACA12341Z5',
       items,
       subtotal,
       discountPercentage: discountPercent,
@@ -261,6 +261,7 @@ export function QuotationsView() {
                   className="modern-input w-full p-2.5"
                   required
                 >
+                  <option value="" disabled>-- Select Customer --</option>
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.companyName}

@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/client';
+import { serverMutate } from '@/lib/supabase/admin';
 import { Quotation } from '@/types';
 import { Result, ok, err } from '@/types/result';
 
 export class QuotationRepository {
-  private static supabase = createClient();
+  private static get supabase() { return createClient(); }
 
   static async getAll(): Promise<Result<Quotation[]>> {
     try {
@@ -40,9 +41,10 @@ export class QuotationRepository {
   static async create(quote: Omit<Quotation, 'id' | 'quoteNumber' | 'createdAt'>): Promise<Result<Quotation>> {
     try {
       const quoteNumber = `ESSMA-QT-2026-${Math.floor(100 + Math.random() * 900)}`;
-      const { data, error } = await this.supabase
-        .from('quotations')
-        .insert({
+
+      const { data, error } = await serverMutate.insert({
+        table: 'quotations',
+        payload: {
           quote_number: quoteNumber,
           customer_id: quote.customerId,
           customer_name: quote.customerName,
@@ -61,31 +63,33 @@ export class QuotationRepository {
           created_by: quote.createdBy,
           valid_until: quote.validUntil,
           version: quote.version
-        })
-        .select()
-        .single();
-      if (error) return err(new Error(error.message));
+        }
+      });
+
+      if (error) return err(new Error(error));
+
+      const d: any = data;
       const created: Quotation = {
-        id: data.id,
-        quoteNumber: data.quote_number,
-        version: data.version || quote.version,
-        customerId: data.customer_id,
+        id: d.id,
+        quoteNumber: d.quote_number,
+        version: d.version || quote.version,
+        customerId: d.customer_id,
         customerName: quote.customerName,
         gstin: quote.gstin,
-        items: data.items || quote.items,
-        subtotal: data.subtotal,
-        discountPercentage: data.discount_percentage || quote.discountPercentage,
-        discountAmount: data.discount_amount || quote.discountAmount,
-        cgstAmount: data.cgst_amount || quote.cgstAmount,
-        sgstAmount: data.sgst_amount || quote.sgstAmount,
-        igstAmount: data.igst_amount || 0,
-        totalTax: data.total_tax,
-        grandTotal: data.grand_total,
-        termsAndConditions: data.terms || quote.termsAndConditions,
-        status: data.status,
-        createdBy: data.created_by || quote.createdBy,
-        createdAt: data.created_at,
-        validUntil: data.valid_until || quote.validUntil
+        items: d.items || quote.items,
+        subtotal: d.subtotal,
+        discountPercentage: d.discount_percentage || quote.discountPercentage,
+        discountAmount: d.discount_amount || quote.discountAmount,
+        cgstAmount: d.cgst_amount || quote.cgstAmount,
+        sgstAmount: d.sgst_amount || quote.sgstAmount,
+        igstAmount: d.igst_amount || 0,
+        totalTax: d.total_tax,
+        grandTotal: d.grand_total,
+        termsAndConditions: d.terms || quote.termsAndConditions,
+        status: d.status,
+        createdBy: d.created_by || quote.createdBy,
+        createdAt: d.created_at,
+        validUntil: d.valid_until || quote.validUntil
       };
       return ok(created);
     } catch (e: any) {
@@ -95,11 +99,12 @@ export class QuotationRepository {
 
   static async update(id: string, updates: Partial<Record<string, any>>): Promise<Result<boolean>> {
     try {
-      const { error } = await this.supabase
-        .from('quotations')
-        .update(updates)
-        .eq('id', id);
-      if (error) return err(new Error(error.message));
+      const { error } = await serverMutate.update({
+        table: 'quotations',
+        payload: updates,
+        match: { id }
+      });
+      if (error) return err(new Error(error));
       return ok(true);
     } catch (e: any) {
       return err(e instanceof Error ? e : new Error(String(e)));

@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/client';
+import { serverMutate } from '@/lib/supabase/admin';
 import { Customer } from '@/types';
 import { Result, ok, err } from '@/types/result';
 
 export class CustomerRepository {
-  private static supabase = createClient();
+  private static get supabase() { return createClient(); }
 
   static async getAll(): Promise<Result<Customer[]>> {
     try {
@@ -16,19 +17,22 @@ export class CustomerRepository {
 
       const customers: Customer[] = (data || []).map((item: Record<string, any>) => ({
         id: item.id,
-        code: item.code,
+        customerCode: item.customer_code,
         companyName: item.company_name,
-        gstin: item.gstin,
-        industry: item.industry || 'Industrial',
-        primaryContactName: item.primary_contact_name,
-        primaryContactEmail: item.primary_contact_email,
-        primaryContactPhone: item.primary_contact_phone,
+        contactPerson: item.contact_person,
+        email: item.email,
+        phone: item.phone,
+        alternatePhone: item.alternate_phone,
+        gstNumber: item.gst_number,
+        panNumber: item.pan_number,
+        billingAddress: item.billing_address,
+        serviceAddress: item.service_address,
         city: item.city,
-        branches: [],
-        status: item.status || 'Active',
-        totalEquipmentCount: item.total_equipment_count || 0,
-        activeAmcContractsCount: item.active_amc_contracts_count || 0,
-        totalRevenue: item.total_revenue || 0,
+        state: item.state,
+        pincode: item.pincode,
+        customerType: item.customer_type,
+        status: item.status,
+        notes: item.notes,
         createdAt: item.created_at
       }));
 
@@ -38,46 +42,54 @@ export class CustomerRepository {
     }
   }
 
-  static async create(cust: Omit<Customer, 'id' | 'code' | 'createdAt'>): Promise<Result<Customer>> {
+  static async create(cust: Omit<Customer, 'id' | 'customerCode' | 'createdAt'>): Promise<Result<Customer>> {
     try {
-      const code = `CUST-2026-${Math.floor(100 + Math.random() * 900)}`;
-      const { data, error } = await this.supabase
-        .from('customers')
-        .insert({
-          code,
+      const customer_code = `CUST-2026-${Math.floor(100 + Math.random() * 900)}`;
+
+      const { data, error } = await serverMutate.insert({
+        table: 'customers',
+        payload: {
+          customer_code,
           company_name: cust.companyName,
-          gstin: cust.gstin,
-          industry: cust.industry,
-          primary_contact_name: cust.primaryContactName,
-          primary_contact_email: cust.primaryContactEmail,
-          primary_contact_phone: cust.primaryContactPhone,
+          contact_person: cust.contactPerson,
+          email: cust.email,
+          phone: cust.phone,
+          alternate_phone: cust.alternatePhone,
+          gst_number: cust.gstNumber,
+          pan_number: cust.panNumber,
+          billing_address: cust.billingAddress,
+          service_address: cust.serviceAddress,
           city: cust.city,
+          state: cust.state,
+          pincode: cust.pincode,
+          customer_type: cust.customerType,
           status: cust.status,
-          total_equipment_count: cust.totalEquipmentCount,
-          active_amc_contracts_count: cust.activeAmcContractsCount,
-          total_revenue: cust.totalRevenue
-        })
-        .select()
-        .single();
+          notes: cust.notes,
+        }
+      });
 
-      if (error) return err(new Error(error.message));
+      if (error) return err(new Error(error));
 
+      const d: any = data;
       const created: Customer = {
-        id: data.id,
-        code: data.code,
-        companyName: data.company_name,
-        gstin: data.gstin,
-        industry: data.industry,
-        primaryContactName: data.primary_contact_name,
-        primaryContactEmail: data.primary_contact_email,
-        primaryContactPhone: data.primary_contact_phone,
-        city: data.city,
-        branches: [],
-        status: data.status,
-        totalEquipmentCount: data.total_equipment_count,
-        activeAmcContractsCount: data.active_amc_contracts_count,
-        totalRevenue: data.total_revenue,
-        createdAt: data.created_at
+        id: d.id,
+        customerCode: d.customer_code,
+        companyName: d.company_name,
+        contactPerson: d.contact_person,
+        email: d.email,
+        phone: d.phone,
+        alternatePhone: d.alternate_phone,
+        gstNumber: d.gst_number,
+        panNumber: d.pan_number,
+        billingAddress: d.billing_address,
+        serviceAddress: d.service_address,
+        city: d.city,
+        state: d.state,
+        pincode: d.pincode,
+        customerType: d.customer_type,
+        status: d.status,
+        notes: d.notes,
+        createdAt: d.created_at
       };
 
       return ok(created);

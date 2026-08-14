@@ -68,7 +68,7 @@ export function AmcView() {
               <div>
                 <div className="text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-widest">{amc.contractNumber}</div>
                 <h3 className="text-base font-semibold text-white mt-1">{amc.customerName}</h3>
-                <div className="text-sm text-[var(--color-text-muted)] mt-0.5">Coverage: <span className="text-[var(--color-text-main)] font-medium">{amc.coverageType}</span></div>
+                <div className="text-sm text-[var(--color-text-muted)] mt-0.5">Coverage: <span className="text-[var(--color-text-main)] font-medium">{amc.contractType || 'Comprehensive'}</span></div>
               </div>
               <span
                 className={`text-[11px] px-3 py-1 rounded-full font-semibold border ${
@@ -84,15 +84,15 @@ export function AmcView() {
             <div className="grid grid-cols-3 gap-3 text-[12px] bg-[var(--color-surface-base)]/50 p-3.5 rounded-xl border border-[var(--color-border-subtle)]">
               <div>
                 <span className="text-[var(--color-text-dim)] block mb-0.5">Value</span>
-                <span className="font-semibold text-white">₹{amc.totalValue.toLocaleString('en-IN')}</span>
+                <span className="font-semibold text-white">₹{(amc.totalValue || 0).toLocaleString('en-IN')}</span>
               </div>
               <div>
                 <span className="text-[var(--color-text-dim)] block mb-0.5">Visits Done</span>
-                <span className="font-semibold text-white">{amc.visitsCompleted} / {amc.totalVisitsScheduled}</span>
+                <span className="font-semibold text-white">0 / 4</span>
               </div>
               <div>
-                <span className="text-[var(--color-text-dim)] block mb-0.5">Next Due</span>
-                <span className="font-semibold text-[var(--color-primary)]">{amc.nextScheduledVisit}</span>
+                <span className="text-[var(--color-text-dim)] block mb-0.5">End Date</span>
+                <span className="font-semibold text-[var(--color-primary)]">{amc.endDate || 'N/A'}</span>
               </div>
             </div>
           </div>

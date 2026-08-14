@@ -27,10 +27,10 @@ export function ServiceTicketsView() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Form State for Dispatching Ticket
-  const [equipmentId, setEquipmentId] = useState(equipment[0]?.id || 'eq-1001');
+  const [equipmentId, setEquipmentId] = useState(equipment[0]?.id || '');
   const [issueType, setIssueType] = useState<any>('Battery Backup Failure');
   const [priority, setPriority] = useState<any>('Emergency');
-  const [assignedEngineerId, setAssignedEngineerId] = useState(engineers[0]?.id || 'usr-3');
+  const [assignedEngineerId, setAssignedEngineerId] = useState(engineers[0]?.id || '');
   
   // Right-pane detail state
   const [diagnosisNotes, setDiagnosisNotes] = useState('');
@@ -39,8 +39,8 @@ export function ServiceTicketsView() {
   const filteredTickets = tickets.filter(
     (t) =>
       t.ticketNumber.toLowerCase().includes(search.toLowerCase()) ||
-      t.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      t.issueType.toLowerCase().includes(search.toLowerCase())
+      (t.customerName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (t.title || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -49,12 +49,12 @@ export function ServiceTicketsView() {
     const eng = engineers.find((e) => e.id === assignedEngineerId);
 
     const created = await createServiceTicket({
-      customerId: eq?.customerId || 'cust-101',
+      customerId: eq?.customerId || '11111111-1111-1111-1111-111111111111',
       customerName: eq?.customerName || 'Apex Data Technologies',
       equipmentId,
-      equipmentModel: eq?.modelName || 'ESSMA Online UPS',
-      serialNumber: eq?.serialNumber || 'ESSMA-UPS-99',
-      siteAddress: eq?.siteAddress || 'Bengaluru',
+      equipmentModel: eq?.model || 'Unknown Model',
+      serialNumber: eq?.serialNumber || 'UNKNOWN',
+      siteAddress: eq?.location || 'Unknown Location',
       issueType,
       priority,
       status: 'Assigned',
@@ -129,7 +129,7 @@ export function ServiceTicketsView() {
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="text-xs font-bold text-[var(--color-warning)]">{t.ticketNumber}</div>
-                    <div className="text-xs font-bold text-[var(--color-text-main)]">{t.issueType}</div>
+                    <div className="text-xs font-bold text-[var(--color-text-main)]">{t.title}</div>
                     <div className="text-[10px] text-[var(--color-text-muted)]">{t.customerName}</div>
                   </div>
                   <span
@@ -159,7 +159,7 @@ export function ServiceTicketsView() {
               <div className="flex justify-between items-start border-b border-[var(--color-border-subtle)] pb-4">
                 <div>
                   <div className="text-xs text-[var(--color-text-muted)] ">TICKET: {selectedTicket.ticketNumber}</div>
-                  <h2 className="text-lg font-black text-[var(--color-text-main)] font-heading">{selectedTicket.issueType}</h2>
+                  <h2 className="text-lg font-black text-[var(--color-text-main)] font-heading">{selectedTicket.title}</h2>
                   <div className="text-xs text-[var(--color-primary)] font-bold">{selectedTicket.customerName}</div>
                 </div>
 
@@ -193,17 +193,15 @@ export function ServiceTicketsView() {
                 </div>
               </div>
 
-              {/* Voltage Readings Ledger */}
+              {/* Diagnostics */}
               <div className="bg-[var(--color-surface-base)] p-4 rounded-lg border border-[var(--color-border-subtle)] space-y-2 text-xs ">
                 <div className="font-bold text-[var(--color-text-main)] uppercase tracking-wider text-[11px] border-b border-[var(--color-border-subtle)] pb-1 flex justify-between">
-                  <span>ONSITE VOLTAGE & LOAD DIAGNOSTICS</span>
+                  <span>Diagnostics</span>
                   <Zap className="w-3.5 h-3.5 text-[var(--color-warning)]" />
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-[11px] pt-1">
-                  <div>Input Mains (R-Phase): <span className="text-emerald-500 font-bold">415 V</span></div>
-                  <div>Output Mains: <span className="text-emerald-500 font-bold">400 V</span></div>
-                  <div>Battery DC Bus: <span className="text-[var(--color-warning)] font-bold">482 V</span></div>
-                </div>
+                <p className="text-xs text-[var(--color-text-muted)] whitespace-pre-line leading-relaxed pt-1">
+                  {selectedTicket.description || 'No diagnosis notes provided.'}
+                </p>
               </div>
 
               {/* Diagnosis & Resolution Notes Input */}
@@ -211,7 +209,7 @@ export function ServiceTicketsView() {
                 <label className="text-[var(--color-text-muted)] block font-bold ">Engineer Resolution Notes</label>
                 <textarea
                   rows={3}
-                  value={diagnosisNotes || selectedTicket.diagnosisNotes || ''}
+                  value={diagnosisNotes || selectedTicket.description || ''}
                   onChange={(e) => setDiagnosisNotes(e.target.value)}
                   placeholder="Enter technical diagnostic findings, replaced SCR components or battery replacement notes..."
                   className="modern-input w-full p-2.5 text-xs "
@@ -262,9 +260,10 @@ export function ServiceTicketsView() {
                 className="modern-input w-full p-2.5"
                 required
               >
+                <option value="" disabled>-- Select Equipment --</option>
                 {equipment.map((eq) => (
                   <option key={eq.id} value={eq.id}>
-                    {eq.serialNumber} - {eq.modelName} ({eq.customerName})
+                    {eq.serialNumber} - {eq.model} ({eq.customerName})
                   </option>
                 ))}
               </select>

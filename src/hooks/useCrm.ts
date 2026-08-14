@@ -143,8 +143,7 @@ export function useCrmStore() {
         setCustomers((prev) => [res.data, ...prev]);
         return res.data;
       }
-      console.error('createCustomer failed:', res.error);
-      return null;
+      throw res.error;
     },
 
     // ─── Equipment ───────────────────────────────────────────────────────────
@@ -155,8 +154,7 @@ export function useCrmStore() {
         setEquipment((prev) => [res.data, ...prev]);
         return res.data;
       }
-      console.error('createEquipment failed:', res.error);
-      return null;
+      throw res.error;
     },
     updateEquipmentHealth: () => {},
 
@@ -168,15 +166,14 @@ export function useCrmStore() {
         setTickets((prev) => [res.data, ...prev]);
         return res.data;
       }
-      console.error('createServiceTicket failed:', res.error);
-      return null;
+      throw res.error;
     },
     updateTicketStatus: async (id: string, status: any, notes?: string, sig?: string) => {
       // Optimistic update
       setTickets((prev) =>
         prev.map((t) =>
           t.id === id
-            ? { ...t, status, diagnosisNotes: notes || t.diagnosisNotes, customerSignature: sig || t.customerSignature }
+            ? { ...t, status, description: notes || t.description }
             : t
         )
       );
@@ -184,7 +181,7 @@ export function useCrmStore() {
       // Only persist if it's a valid UUID
       const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       if (isValidUUID) {
-        const res = await ServiceTicketRepository.updateStatus(id, status, notes, sig);
+        const res = await ServiceTicketRepository.updateStatus(id, status);
         if (!res.success) {
           console.error('updateTicketStatus failed:', res.error);
           throw new Error('updateTicketStatus failed');
@@ -197,11 +194,10 @@ export function useCrmStore() {
     updateInventoryStock: async (id: string, delta: number) => {
       // Optimistic update for demo items (IDs don't exist in DB)
       setInventory((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? { ...item, quantityInStock: Math.max(0, item.quantityInStock + delta) }
-            : item
-        )
+        prev.map((item) => {
+          const newQuantity = Math.max(0, (item.currentStock || 0) + delta);
+          return item.id === id ? { ...item, currentStock: newQuantity } : item;
+        })
       );
       // Also try persisting if the item has a real UUID
       const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -216,8 +212,7 @@ export function useCrmStore() {
         setInventory((prev) => [res.data, ...prev]);
         return res.data;
       }
-      console.error('addInventoryItem failed:', res.error);
-      return null;
+      throw res.error;
     },
 
     // ─── Finance / Invoices ──────────────────────────────────────────────────
@@ -229,17 +224,28 @@ export function useCrmStore() {
         setInvoices((prev) => [res.data, ...prev]);
         return res.data;
       }
-      console.error('createInvoice failed:', res.error);
-      return null;
+      throw res.error;
     },
 
     // ─── AMC ─────────────────────────────────────────────────────────────────
     amcContracts,
     pmVisits,
-    updatePmVisitChecklist: (id: string, checklist: any, notes?: string, sig?: string) => {
+    updatePmVisitChecklist: async (id: string, checklist: any, notes?: string, sig?: string) => {
+      // Optimistic UI update
       setPmVisits((prev) =>
         prev.map((v) => (v.id === id ? { ...v, checklist, engineerNotes: notes, customerSignature: sig } : v))
       );
+      // Persist to Supabase
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      if (isValidUUID) {
+        const { serverMutate } = await import('@/lib/supabase/admin');
+        const { error } = await serverMutate.update({
+          table: 'pm_visits',
+          payload: { checklist, engineer_notes: notes, customer_signature: sig, status: 'Completed', completed_at: new Date().toISOString() },
+          match: { id }
+        });
+        if (error) console.error('updatePmVisitChecklist failed:', error);
+      }
     },
 
     // ─── Leads ───────────────────────────────────────────────────────────────
@@ -250,8 +256,7 @@ export function useCrmStore() {
         setLeads((prev) => [res.data, ...prev]);
         return res.data;
       }
-      console.error('createLead failed:', res.error);
-      return null;
+      throw res.error;
     },
     convertLeadToQuote: (leadId: string): Quotation | null => {
       const lead = leads.find((l) => l.id === leadId);
@@ -266,17 +271,17 @@ export function useCrmStore() {
         customerName: lead.companyName,
         gstin: '',
         items: [],
-        subtotal: lead.budget,
+        subtotal: lead.budget || 0,
         discountPercentage: 0,
         discountAmount: 0,
-        cgstAmount: lead.budget * 0.09,
-        sgstAmount: lead.budget * 0.09,
+        cgstAmount: (lead.budget || 0) * 0.09,
+        sgstAmount: (lead.budget || 0) * 0.09,
         igstAmount: 0,
-        totalTax: lead.budget * 0.18,
-        grandTotal: lead.budget * 1.18,
+        totalTax: (lead.budget || 0) * 0.18,
+        grandTotal: (lead.budget || 0) * 1.18,
         termsAndConditions: '1. 50% Advance with PO. 2. 1-Year Onsite Warranty.',
         status: 'Draft',
-        createdBy: lead.assignedSalespersonName,
+        createdBy: lead.assignedSalespersonName || 'Unassigned',
         createdAt: new Date().toISOString(),
         validUntil: new Date(Date.now() + 30 * 86400000).toISOString().substring(0, 10)
       };
@@ -292,8 +297,7 @@ export function useCrmStore() {
         setQuotations((prev) => [res.data, ...prev]);
         return res.data;
       }
-      console.error('createQuotation failed:', res.error);
-      return null;
+      throw res.error;
     },
     updateQuotationStatus: async (id: string, status: Quotation['status']) => {
       // Optimistic update
@@ -309,9 +313,17 @@ export function useCrmStore() {
       }
     },
 
-    // ─── Other ───────────────────────────────────────────────────────────────
+    // ─── Suppliers ───────────────────────────────────────────────────────────
     installations,
     suppliers,
+    createSupplier: async (supplier: any) => {
+      const res = await SupplierRepository.create(supplier);
+      if (res.success) {
+        setSuppliers((prev) => [res.data, ...prev]);
+        return res.data;
+      }
+      throw res.error;
+    },
     purchaseOrders: [],
     notifications,
     markNotificationAsRead: (id: string) => {

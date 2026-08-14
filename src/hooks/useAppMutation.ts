@@ -22,13 +22,13 @@ export function useAppMutation<TData = unknown, TError = Error, TVariables = voi
     // the UI components should use `mutation.isPending` to show "Saving..." on the button.
     onSuccess: (...args) => {
       const [data] = args;
-      if (options.successMessage) {
-        const message =
-          typeof options.successMessage === 'function'
-            ? options.successMessage(data)
-            : options.successMessage;
-        toast.success(message);
-      }
+      const message = options.successMessage
+        ? typeof options.successMessage === 'function'
+          ? options.successMessage(data)
+          : options.successMessage
+        : 'Operation completed successfully.';
+      toast.success(message);
+
       if (options.onSuccess) {
         options.onSuccess(...args);
       }

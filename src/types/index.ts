@@ -38,20 +38,23 @@ export interface CustomerBranch {
 
 export interface Customer {
   id: string;
-  code: string; // e.g. CUST-2026-089
+  customerCode: string;
   companyName: string;
-  gstin: string;
-  industry: string;
-  primaryContactName: string;
-  primaryContactEmail: string;
-  primaryContactPhone: string;
-  city: string;
-  branches: CustomerBranch[];
-  status: 'Active' | 'Inactive' | 'Lead';
-  totalEquipmentCount: number;
-  activeAmcContractsCount: number;
-  totalRevenue: number;
-  createdAt: string;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
+  alternatePhone: string | null;
+  gstNumber: string | null;
+  panNumber: string | null;
+  billingAddress: string | null;
+  serviceAddress: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  customerType: string | null;
+  status: string | null;
+  notes: string | null;
+  createdAt: string | null;
 }
 
 export type EquipmentCategory = 'UPS' | 'Inverter' | 'Battery Bank' | 'Solar System' | 'Stabilizer' | 'Accessory';
@@ -69,32 +72,26 @@ export interface BatteryLog {
 
 export interface Equipment {
   id: string;
-  serialNumber: string; // Dynamic QR encoded
-  modelName: string;
-  category: EquipmentCategory;
-  capacityKva: number; // kVA rating
-  capacityKw: number;
-  phase: '1-Phase' | '3-Phase';
-  batteryType?: string; // e.g. 12V 100Ah Tubular
-  batteryQuantity?: number;
   customerId: string;
-  customerName: string;
-  branchId: string;
-  siteAddress: string;
-  city: string;
-  installationDate: string;
-  warrantyStartDate: string;
-  warrantyEndDate: string;
-  warrantyStatus: 'Active' | 'Expired' | 'Claim Pending';
-  amcStatus: 'Covered' | 'Expired' | 'None' | 'Pending Renewal';
-  amcContractId?: string;
-  healthScore: number; // 0-100%
-  lastInspectionDate: string;
-  nextMaintenanceDueDate: string;
-  assignedEngineerId?: string;
-  assignedEngineerName?: string;
-  installationPhotos?: string[];
-  qrCodeUrl?: string;
+  equipmentCode: string;
+  equipmentType: string | null;
+  brand: string | null;
+  model: string | null;
+  serialNumber: string | null;
+  capacity: string | null;
+  location: string | null;
+  installationDate: string | null;
+  warrantyStart: string | null;
+  warrantyEnd: string | null;
+  lastServiceDate: string | null;
+  nextServiceDate: string | null;
+  status: string | null;
+  condition: string | null;
+  notes: string | null;
+  assetNumber: string | null;
+  purchaseDate: string | null;
+  // Below fields are joined/computed fields that we will populate dynamically, not strictly DB columns, but useful for UI.
+  customerName?: string;
 }
 
 export interface Lead {
@@ -102,19 +99,21 @@ export interface Lead {
   leadNumber: string;
   companyName: string;
   contactPerson: string;
-  email: string;
-  phone: string;
-  city: string;
-  requirement: string;
-  estimatedKva: number;
-  budget: number;
-  source: 'Website' | 'Referral' | 'Tender' | 'Cold Call' | 'Exhibition';
-  status: 'New' | 'Qualified' | 'Proposal Sent' | 'Negotiation' | 'Won' | 'Lost';
-  probability: number; // %
-  assignedSalespersonId: string;
-  assignedSalespersonName: string;
-  expectedClosureDate: string;
-  createdAt: string;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  requirement: string | null;
+  estimatedKva: number | null;
+  budget: number | null;
+  source: string | null;
+  status: string | null;
+  probability: number | null;
+  assignedSalespersonId: string | null;
+  expectedClosureDate: string | null;
+  createdAt: string | null;
+
+  // UI fields
+  assignedSalespersonName?: string;
 }
 
 export interface QuotationItem {
@@ -187,49 +186,44 @@ export interface ServiceTicket {
   id: string;
   ticketNumber: string;
   customerId: string;
-  customerName: string;
-  equipmentId: string;
-  equipmentModel: string;
-  serialNumber: string;
-  siteAddress: string;
-  issueType: 'UPS Tripping' | 'Battery Backup Failure' | 'Overheating' | 'Noise / Fan Fault' | 'Output Voltage Distortion' | 'Preventive Maintenance';
-  priority: TicketPriority;
-  status: TicketStatus;
-  reportedBy: string;
-  reportedPhone: string;
-  assignedEngineerId?: string;
+  equipmentId: string | null;
+  title: string;
+  description: string | null;
+  ticketType: string | null;
+  priority: string | null;
+  status: string | null;
+  source: string | null;
+  assignedTo: string | null;
+  reportedAt: string | null;
+  scheduledAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  closedAt: string | null;
+  
+  // UI Display fields (joined)
+  customerName?: string;
+  equipmentModel?: string;
+  serialNumber?: string;
   assignedEngineerName?: string;
-  diagnosisNotes?: string;
-  partsUsed?: { partId: string; partName: string; quantity: number; cost: number }[];
-  voltageReadings?: { inputR: number; inputY: number; inputB: number; outputR: number; batteryVoltage: number };
-  beforePhotos?: string[];
-  afterPhotos?: string[];
-  customerSignature?: string;
-  resolutionTimeHours?: number;
-  slaMet?: boolean;
-  createdAt: string;
-  resolvedAt?: string;
 }
 
 export interface AmcContract {
   id: string;
   contractNumber: string;
   customerId: string;
-  customerName: string;
-  equipmentIds: string[];
-  coverageType: 'Comprehensive' | 'Non-Comprehensive' | 'Labor Only';
-  startDate: string;
-  endDate: string;
-  totalValue: number;
-  visitFrequency: 'Monthly' | 'Quarterly' | 'Half-Yearly' | 'Annual';
-  totalVisitsScheduled: number;
-  visitsCompleted: number;
-  visitsMissed: number;
-  status: 'Active' | 'Expiring Soon' | 'Expired' | 'Renewed';
-  assignedEngineerId: string;
-  assignedEngineerName: string;
-  lastVisitDate?: string;
-  nextScheduledVisit: string;
+  contractType: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  billingFrequency: string | null;
+  contractValue: number | null;
+  taxAmount: number | null;
+  totalValue: number | null;
+  status: string | null;
+  notes: string | null;
+  terms: string | null;
+
+  // UI fields
+  customerName?: string;
 }
 
 export interface PmVisit {
@@ -237,47 +231,42 @@ export interface PmVisit {
   visitNumber: string;
   amcContractId: string;
   customerId: string;
-  customerName: string;
   equipmentId: string;
-  equipmentModel: string;
-  serialNumber: string;
-  assignedEngineerId: string;
-  assignedEngineerName: string;
-  scheduledDate: string;
-  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Missed';
-  checklist: {
-    mainsVoltageChecked: boolean;
-    outputVoltageChecked: boolean;
-    upsLoadPercent: number;
-    batteryVoltageLogged: boolean;
-    fanCleaningDone: boolean;
-    terminalTighteningDone: boolean;
-  };
-  batteryVoltageReadings: { batteryIndex: number; voltage: number }[];
-  engineerNotes?: string;
-  customerSignature?: string;
-  completedAt?: string;
+  assignedEngineerId: string | null;
+  scheduledDate: string | null;
+  status: string | null;
+  checklist: any;
+  batteryVoltageReadings: any;
+  engineerNotes?: string | null;
+  customerSignature?: string | null;
+  completedAt?: string | null;
+
+  // UI fields
+  customerName?: string;
+  equipmentModel?: string;
+  serialNumber?: string;
+  assignedEngineerName?: string;
 }
 
 export interface InventoryItem {
   id: string;
   sku: string;
   name: string;
-  category: EquipmentCategory | 'Spare Part';
-  warehouseLocation: string; // e.g. WH-1 (Main Warehouse)
-  rackNumber: string; // e.g. RACK-B3
-  shelfNumber: string; // e.g. SHELF-02
-  batchNumber: string;
-  serialNumber?: string;
-  quantityInStock: number;
-  reservedQuantity: number;
-  minimumThreshold: number;
-  unitCost: number;
-  sellingPrice: number;
-  supplierId: string;
-  supplierName: string;
-  lastRestockedDate: string;
-  barcodeQr: string;
+  categoryId: string | null;
+  description: string | null;
+  unit: string | null;
+  currentStock: number | null;
+  minimumStock: number | null;
+  maximumStock: number | null;
+  reservedStock: number | null;
+  unitCost: number | null;
+  sellingPrice: number | null;
+  supplierId: string | null;
+  status: string | null;
+
+  // UI fields
+  categoryName?: string;
+  supplierName?: string;
 }
 
 export interface Supplier {
@@ -297,23 +286,23 @@ export interface Supplier {
 export interface Invoice {
   id: string;
   invoiceNumber: string;
-  invoiceType: 'Sales' | 'Service' | 'AMC Contract';
   customerId: string;
-  customerName: string;
-  gstin: string;
-  issueDate: string;
-  dueDate: string;
-  items: { description: string; quantity: number; unitPrice: number; total: number }[];
-  subtotal: number;
-  cgst: number;
-  sgst: number;
-  igst: number;
-  totalTax: number;
-  grandTotal: number;
-  paidAmount: number;
-  balanceDue: number;
-  paymentStatus: 'Paid' | 'Partially Paid' | 'Unpaid' | 'Overdue';
-  pdfUrl?: string;
+  invoiceDate: string | null;
+  dueDate: string | null;
+  subtotal: number | null;
+  taxAmount: number | null;
+  discount: number | null;
+  totalAmount: number | null;
+  amountPaid: number | null;
+  balanceAmount: number | null;
+  status: string | null;
+  notes: string | null;
+  serviceTicketId: string | null;
+  amcId: string | null;
+
+  // UI display fields (joined)
+  customerName?: string;
+  invoiceItems?: any[];
 }
 
 export interface PaymentRecord {

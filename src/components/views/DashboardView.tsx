@@ -14,7 +14,9 @@ import {
   Activity,
   Zap,
   ArrowUpRight,
-  ShieldAlert
+  ShieldAlert,
+  Package,
+  Calendar
 } from 'lucide-react';
 import {
   AreaChart,
@@ -66,7 +68,9 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
   const openTickets = tickets.filter((t) => t.status !== 'Closed' && t.status !== 'Resolved');
   const emergencyTickets = tickets.filter((t) => t.priority === 'Emergency' && t.status !== 'Closed');
-  const lowStockItems = inventory.filter((i) => i.quantityInStock <= i.minimumThreshold);
+  const lowStockItems = inventory.filter(
+    (item) => (item.currentStock || 0) <= (item.minimumStock || 0)
+  );
   const expiringAmcs = amcContracts.filter((a) => a.status === 'Expiring Soon');
 
   return (
@@ -249,12 +253,12 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                 className="bg-white/5 border border-[var(--color-border-subtle)] p-4 rounded-xl hover:border-[var(--color-warning)] cursor-pointer transition-all text-xs space-y-2 group"
               >
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-white group-hover:text-[var(--color-warning)] transition-colors">{t.ticketNumber} <span className="text-[var(--color-text-dim)] mx-1">|</span> {t.issueType}</span>
+                  <span className="font-bold text-white group-hover:text-[var(--color-warning)] transition-colors">{t.ticketNumber} <span className="text-[var(--color-text-dim)] mx-1">|</span> {t.title}</span>
                   <span className="bg-[var(--color-warning)]/15 text-[var(--color-warning)] text-[10px] px-2 py-0.5 rounded-full font-bold shadow-[0_0_8px_rgba(245,158,11,0.15)]">
                     {t.priority}
                   </span>
                 </div>
-                <div className="text-[var(--color-text-muted)] text-[11px] font-medium">{t.customerName} • {t.siteAddress}</div>
+                <div className="text-[var(--color-text-muted)] text-[11px] font-medium">{t.customerName}</div>
                 <div className="flex justify-between items-center text-[10px] text-[var(--color-text-dim)] pt-2 border-t border-[var(--color-border-subtle)] mt-1">
                   <span>Engineer: <strong className="text-[var(--color-text-main)] ml-1">{t.assignedEngineerName}</strong></span>
                   <span>Status: <strong className="text-[var(--color-primary)] ml-1">{t.status}</strong></span>
@@ -297,6 +301,63 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                 <span className="text-[var(--color-text-muted)] font-medium">{s.name} ({s.value}%)</span>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Reminders & Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Low Stock Reminders */}
+        <div className="glass-panel p-6 space-y-4">
+          <div className="flex justify-between items-center text-sm">
+            <span className="font-bold text-white uppercase flex items-center gap-2 font-heading tracking-wide">
+              <Package className="w-4 h-4 text-[var(--color-warning)]" /> Low Stock Alerts
+            </span>
+            <button onClick={() => onNavigate('inventory')} className="text-[var(--color-primary)] hover:text-white transition-colors text-[11px] font-bold tracking-widest uppercase bg-[var(--color-primary)]/10 px-2 py-1 rounded">
+              Restock
+            </button>
+          </div>
+          <div className="space-y-3">
+            {lowStockItems.length > 0 ? (
+              lowStockItems.slice(0, 3).map((item) => (
+                <div key={item.id} className="bg-white/5 border border-[var(--color-border-subtle)] p-4 rounded-xl text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="font-bold text-white">{item.name} <span className="text-[var(--color-text-dim)]">({item.sku})</span></span>
+                    <span className="text-[var(--color-warning)] font-bold">{item.currentStock || 0} left</span>
+                  </div>
+                  <div className="text-[10px] text-[var(--color-text-muted)]">Minimum threshold: {item.minimumStock || 0}</div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-xs text-[var(--color-text-muted)] py-4">All stocks are optimal.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Expiring AMCs & SLAs */}
+        <div className="glass-panel p-6 space-y-4">
+          <div className="flex justify-between items-center text-sm">
+            <span className="font-bold text-white uppercase flex items-center gap-2 font-heading tracking-wide">
+              <Calendar className="w-4 h-4 text-rose-500" /> Expiring AMCs
+            </span>
+            <button onClick={() => onNavigate('amc')} className="text-[var(--color-primary)] hover:text-white transition-colors text-[11px] font-bold tracking-widest uppercase bg-[var(--color-primary)]/10 px-2 py-1 rounded">
+              Renewals
+            </button>
+          </div>
+          <div className="space-y-3">
+            {expiringAmcs.length > 0 ? (
+              expiringAmcs.slice(0, 3).map((amc) => (
+                <div key={amc.id} className="bg-white/5 border border-[var(--color-border-subtle)] p-4 rounded-xl text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="font-bold text-white">{amc.customerName}</span>
+                    <span className="text-rose-500 font-bold">{amc.endDate}</span>
+                  </div>
+                  <div className="text-[10px] text-[var(--color-text-muted)]">Contract Value: ₹{(amc.totalValue || 0).toLocaleString('en-IN')}</div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-xs text-[var(--color-text-muted)] py-4">No AMCs expiring soon.</div>
+            )}
           </div>
         </div>
       </div>

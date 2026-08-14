@@ -49,8 +49,8 @@ export function LeadsView() {
       source: 'Website',
       status: 'Qualified',
       probability: 70,
-      assignedSalespersonId: 'usr-4',
-      assignedSalespersonName: 'Priya Sundaram',
+      assignedSalespersonId: null,
+      assignedSalespersonName: undefined,
       expectedClosureDate: new Date(Date.now() + 30 * 86400000).toISOString().substring(0, 10)
     });
     setShowAddModal(false);
@@ -109,10 +109,14 @@ export function LeadsView() {
                     <div className="font-bold text-[var(--color-warning)]">{lead.leadNumber}</div>
                     <div className="font-bold text-[var(--color-text-main)]">{lead.companyName}</div>
                     <div className="text-[10px] text-[var(--color-text-muted)]">{lead.contactPerson} ({lead.city})</div>
+                    <div className="flex justify-between items-center text-[10px] text-[var(--color-text-muted)] mt-3 border-t border-[var(--color-border-subtle)] pt-2">
+                      <span>{lead.assignedSalespersonName || 'Unassigned'}</span>
+                      <span className="font-bold text-emerald-500">₹{(lead.budget || 0).toLocaleString('en-IN')}</span>
+                    </div>
                   </td>
                   <td className="py-3 px-4 text-[var(--color-text-muted)] font-sans">{lead.requirement}</td>
                   <td className="py-3 px-4 text-right font-bold text-emerald-500">
-                    ₹{lead.budget.toLocaleString('en-IN')}
+                    ₹{(lead.budget || 0).toLocaleString('en-IN')}
                   </td>
                   <td className="py-3 px-4 text-center font-bold text-[var(--color-warning)]">{lead.probability}%</td>
                   <td className="py-3 px-4 text-center">

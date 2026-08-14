@@ -61,9 +61,9 @@ export function CommandPalette({ isOpen, onClose, onSelectEntity }: CommandPalet
             {equipment
               .filter(
                 (e) =>
-                  e.serialNumber.toLowerCase().includes(search.toLowerCase()) ||
-                  e.modelName.toLowerCase().includes(search.toLowerCase()) ||
-                  e.customerName.toLowerCase().includes(search.toLowerCase())
+                  (e.serialNumber || '').toLowerCase().includes(search.toLowerCase()) ||
+                  (e.model || '').toLowerCase().includes(search.toLowerCase()) ||
+                  (e.customerName || '').toLowerCase().includes(search.toLowerCase())
               )
               .slice(0, 4)
               .map((eq) => (
@@ -76,11 +76,11 @@ export function CommandPalette({ isOpen, onClose, onSelectEntity }: CommandPalet
                   className="px-3 py-2 hover:bg-slate-800 rounded cursor-pointer flex justify-between items-center text-xs"
                 >
                   <div>
-                    <div className="font-bold text-slate-100">{eq.serialNumber}</div>
-                    <div className="text-[11px] text-slate-400">{eq.modelName} • {eq.customerName}</div>
+                    <div className="font-bold text-slate-100">{eq.model || 'Unknown Model'}</div>
+                    <div className="text-[11px] text-slate-400">{eq.serialNumber || 'No Serial'}</div>
                   </div>
-                  <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-amber-300">
-                    Health: {eq.healthScore}%
+                  <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-emerald-400">
+                    {eq.condition || 'N/A'}
                   </span>
                 </div>
               ))}
@@ -95,7 +95,7 @@ export function CommandPalette({ isOpen, onClose, onSelectEntity }: CommandPalet
               .filter(
                 (c) =>
                   c.companyName.toLowerCase().includes(search.toLowerCase()) ||
-                  c.code.toLowerCase().includes(search.toLowerCase())
+                  c.customerCode.toLowerCase().includes(search.toLowerCase())
               )
               .slice(0, 4)
               .map((c) => (
@@ -109,10 +109,10 @@ export function CommandPalette({ isOpen, onClose, onSelectEntity }: CommandPalet
                 >
                   <div>
                     <div className="font-bold text-slate-100">{c.companyName}</div>
-                    <div className="text-[11px] text-slate-400">{c.code} • {c.city}</div>
+                    <div className="text-[11px] text-slate-400">{c.customerCode} • {c.city}</div>
                   </div>
                   <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-emerald-400">
-                    {c.totalEquipmentCount} Equipment Assets
+                    {c.customerType || 'Customer'}
                   </span>
                 </div>
               ))}
@@ -127,25 +127,25 @@ export function CommandPalette({ isOpen, onClose, onSelectEntity }: CommandPalet
               .filter(
                 (t) =>
                   t.ticketNumber.toLowerCase().includes(search.toLowerCase()) ||
-                  t.customerName.toLowerCase().includes(search.toLowerCase()) ||
-                  t.issueType.toLowerCase().includes(search.toLowerCase())
+                  (t.customerName || '').toLowerCase().includes(search.toLowerCase()) ||
+                  (t.title || '').toLowerCase().includes(search.toLowerCase())
               )
-              .slice(0, 3)
-              .map((t) => (
+              .slice(0, 4)
+              .map((ticket) => (
                 <div
-                  key={t.id}
+                  key={ticket.id}
                   onClick={() => {
-                    onSelectEntity('tickets', t.id);
+                    onSelectEntity('tickets', ticket.id);
                     onClose();
                   }}
                   className="px-3 py-2 hover:bg-slate-800 rounded cursor-pointer flex justify-between items-center text-xs"
                 >
                   <div>
-                    <div className="font-bold text-slate-100">{t.ticketNumber} - {t.issueType}</div>
-                    <div className="text-[11px] text-slate-400">{t.customerName}</div>
+                    <div className="font-bold text-slate-100">{ticket.ticketNumber}</div>
+                    <div className="text-[11px] text-slate-400">{ticket.customerName} • {ticket.title}</div>
                   </div>
-                  <span className="text-[10px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded font-bold">
-                    {t.priority}
+                  <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-amber-300">
+                    {ticket.status}
                   </span>
                 </div>
               ))}
@@ -172,8 +172,8 @@ export function CommandPalette({ isOpen, onClose, onSelectEntity }: CommandPalet
                     <div className="font-bold text-slate-100">{inv.invoiceNumber}</div>
                     <div className="text-[11px] text-slate-400">{inv.customerName}</div>
                   </div>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">
-                    ₹{inv.grandTotal.toLocaleString('en-IN')}
+                  <span className="text-[10px] text-emerald-400 font-bold ml-2">
+                    ₹{inv.totalAmount?.toLocaleString()}
                   </span>
                 </div>
               ))}

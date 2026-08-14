@@ -1,32 +1,34 @@
 import { createClient } from '@/lib/supabase/client';
+import { serverMutate } from '@/lib/supabase/admin';
+
 import { AmcContract, PmVisit } from '@/types';
 import { Result, ok, err } from '@/types/result';
 
 export class AmcRepository {
-  private static supabase = createClient();
+  private static get supabase() { return createClient(); }
+
 
   static async getContracts(): Promise<Result<AmcContract[]>> {
     try {
-      const { data, error } = await this.supabase.from('amc_contracts').select('*');
+      const { data, error } = await this.supabase
+        .from('amc_contracts')
+        .select('*, customers(company_name)');
       if (error) return err(new Error(error.message));
-      const contracts: AmcContract[] = (data || []).map((item: Record<string, any>) => ({
+      const contracts: AmcContract[] = (data || []).map((item: any) => ({
         id: item.id,
         contractNumber: item.contract_number,
         customerId: item.customer_id,
-        customerName: item.customer_name || 'Apex Data',
-        equipmentIds: [],
-        coverageType: item.coverage_type || 'Comprehensive',
+        contractType: item.contract_type,
         startDate: item.start_date,
         endDate: item.end_date,
+        billingFrequency: item.billing_frequency,
+        contractValue: item.contract_value,
+        taxAmount: item.tax_amount,
         totalValue: item.total_value,
-        visitFrequency: item.visit_frequency || 'Quarterly',
-        totalVisitsScheduled: item.total_visits_scheduled || 4,
-        visitsCompleted: item.visits_completed || 0,
-        visitsMissed: 0,
-        status: item.status || 'Active',
-        assignedEngineerId: item.assigned_engineer_id || 'usr-3',
-        assignedEngineerName: 'Amit Kumar',
-        nextScheduledVisit: item.next_scheduled_visit || '2026-10-15'
+        status: item.status,
+        notes: item.notes,
+        terms: item.terms,
+        customerName: item.customers?.company_name
       }));
       return ok(contracts);
     } catch (e: any) {
@@ -36,30 +38,28 @@ export class AmcRepository {
 
   static async getPmVisits(): Promise<Result<PmVisit[]>> {
     try {
-      const { data, error } = await this.supabase.from('pm_visits').select('*');
+      const { data, error } = await this.supabase
+        .from('pm_visits')
+        .select('*, customers(company_name), equipment(model, serial_number), profiles!pm_visits_assigned_engineer_id_fkey(full_name)');
       if (error) return err(new Error(error.message));
-      const visits: PmVisit[] = (data || []).map((item: Record<string, any>) => ({
+      const visits: PmVisit[] = (data || []).map((item: any) => ({
         id: item.id,
         visitNumber: item.visit_number,
         amcContractId: item.amc_contract_id,
         customerId: item.customer_id,
-        customerName: item.customer_name || 'Fortis Hospital',
         equipmentId: item.equipment_id,
-        equipmentModel: item.equipment_model || 'ESSMA 60kVA UPS',
-        serialNumber: item.serial_number || 'ESSMA-UPS-60KVA-77419',
-        assignedEngineerId: item.assigned_engineer_id || 'usr-3',
-        assignedEngineerName: 'Amit Kumar',
+        assignedEngineerId: item.assigned_engineer_id,
         scheduledDate: item.scheduled_date,
-        status: item.status || 'Scheduled',
-        checklist: item.checklist || {
-          mainsVoltageChecked: true,
-          outputVoltageChecked: true,
-          upsLoadPercent: 42,
-          batteryVoltageLogged: true,
-          fanCleaningDone: true,
-          terminalTighteningDone: true
-        },
-        batteryVoltageReadings: Array.from({ length: 16 }, (_, i) => ({ batteryIndex: i + 1, voltage: 13.6 }))
+        status: item.status,
+        checklist: item.checklist,
+        batteryVoltageReadings: item.battery_voltage_readings,
+        engineerNotes: item.engineer_notes,
+        customerSignature: item.customer_signature,
+        completedAt: item.completed_at,
+        customerName: item.customers?.company_name,
+        equipmentModel: item.equipment?.model,
+        serialNumber: item.equipment?.serial_number,
+        assignedEngineerName: item.profiles?.full_name
       }));
       return ok(visits);
     } catch (e: any) {

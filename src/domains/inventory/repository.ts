@@ -1,37 +1,37 @@
 import { createClient } from '@/lib/supabase/client';
+import { serverMutate } from '@/lib/supabase/admin';
 import { InventoryItem } from '@/types';
 import { Result, ok, err } from '@/types/result';
 
 export class InventoryRepository {
-  private static supabase = createClient();
+  private static get supabase() { return createClient(); }
 
   static async getAll(): Promise<Result<InventoryItem[]>> {
     try {
       const { data, error } = await this.supabase
-        .from('inventory_items_view')
-        .select('*')
+        .from('inventory_items')
+        .select('*, inventory_categories(name), suppliers(name)')
         .order('sku', { ascending: true });
 
       if (error) return err(new Error(error.message));
 
-      const items: InventoryItem[] = (data || []).map((item: Record<string, any>) => ({
+      const items: InventoryItem[] = (data || []).map((item: any) => ({
         id: item.id,
         sku: item.sku,
         name: item.name,
-        category: item.category,
-        warehouseLocation: item.warehouse_location,
-        rackNumber: item.rack_number || 'RACK-A1',
-        shelfNumber: item.shelf_number || 'SHELF-01',
-        batchNumber: item.batch_number || 'BT-2026',
-        quantityInStock: item.quantity_in_stock,
-        reservedQuantity: item.reserved_quantity || 0,
-        minimumThreshold: item.minimum_threshold || 5,
+        categoryId: item.category_id,
+        description: item.description,
+        unit: item.unit,
+        currentStock: item.current_stock,
+        minimumStock: item.minimum_stock,
+        maximumStock: item.maximum_stock,
+        reservedStock: item.reserved_stock,
         unitCost: item.unit_cost,
         sellingPrice: item.selling_price,
-        supplierId: item.supplier_id || 'sup-1',
-        supplierName: item.supplier_name || 'Semikron Electronics',
-        lastRestockedDate: item.last_restocked_date,
-        barcodeQr: item.sku
+        supplierId: item.supplier_id,
+        status: item.status,
+        categoryName: item.inventory_categories?.name,
+        supplierName: item.suppliers?.name
       }));
 
       return ok(items);
@@ -42,10 +42,11 @@ export class InventoryRepository {
 
   static async updateStock(id: string, deltaQuantity: number): Promise<Result<boolean>> {
     try {
-      const { error } = await this.supabase
-        .rpc('update_inventory_stock', { p_item_id: id, p_delta: deltaQuantity });
-
-      if (error) return err(new Error(error.message));
+      const { error } = await serverMutate.rpc({
+        rpc: 'update_inventory_stock',
+        args: { p_item_id: id, p_delta: deltaQuantity }
+      });
+      if (error) return err(new Error(error));
       return ok(true);
     } catch (e: any) {
       return err(e instanceof Error ? e : new Error(String(e)));
@@ -54,43 +55,46 @@ export class InventoryRepository {
 
   static async create(item: Omit<InventoryItem, 'id' | 'barcodeQr'>): Promise<Result<InventoryItem>> {
     try {
-      const { data, error } = await this.supabase
-        .rpc('create_inventory_item_flat', {
-          p_organization_id: '00000000-0000-0000-0000-000000000000', // To be updated when auth is fully wired
-          p_sku: item.sku,
-          p_name: item.name,
-          p_category_name: item.category || 'General',
-          p_supplier_name: item.supplierName || 'Unknown Supplier',
-          p_warehouse_location: item.warehouseLocation || 'Main Warehouse',
-          p_rack_number: item.rackNumber || 'RACK-A1',
-          p_shelf_number: item.shelfNumber || 'SHELF-01',
-          p_quantity_in_stock: item.quantityInStock || 0,
-          p_minimum_threshold: item.minimumThreshold || 0,
-          p_unit_cost: item.unitCost || 0,
-          p_selling_price: item.sellingPrice || 0,
-          p_user_id: '00000000-0000-0000-0000-000000000000'
-        });
+      const { data, error } = await serverMutate.insert({
+        table: 'inventory_items',
+        payload: {
+          sku: item.sku,
+          name: item.name,
+          category_id: item.categoryId,
+          description: item.description,
+          unit: item.unit,
+          current_stock: item.currentStock || 0,
+          minimum_stock: item.minimumStock || 0,
+          maximum_stock: item.maximumStock,
+          reserved_stock: item.reservedStock || 0,
+          unit_cost: item.unitCost || 0,
+          selling_price: item.sellingPrice || 0,
+          supplier_id: item.supplierId,
+          status: item.status || 'Active',
+        },
+        select: '*, inventory_categories(name), suppliers(name)'
+      });
 
-      if (error) return err(new Error(error.message));
+      if (error) return err(new Error(error));
 
+      const d: any = data;
       const created: InventoryItem = {
-        id: data.id,
-        sku: data.sku,
-        name: data.name,
-        category: item.category,
-        warehouseLocation: item.warehouseLocation,
-        rackNumber: item.rackNumber,
-        shelfNumber: item.shelfNumber,
-        batchNumber: item.batchNumber || 'BT-2026',
-        quantityInStock: data.current_stock,
-        reservedQuantity: data.reserved_stock || 0,
-        minimumThreshold: data.minimum_stock || 5,
-        unitCost: data.unit_cost,
-        sellingPrice: data.selling_price,
-        supplierId: data.supplier_id,
-        supplierName: item.supplierName,
-        lastRestockedDate: new Date().toISOString().substring(0, 10),
-        barcodeQr: data.sku
+        id: d.id,
+        sku: d.sku,
+        name: d.name,
+        categoryId: d.category_id,
+        description: d.description,
+        unit: d.unit,
+        currentStock: d.current_stock,
+        minimumStock: d.minimum_stock,
+        maximumStock: d.maximum_stock,
+        reservedStock: d.reserved_stock,
+        unitCost: d.unit_cost,
+        sellingPrice: d.selling_price,
+        supplierId: d.supplier_id,
+        status: d.status,
+        categoryName: d.inventory_categories?.name || item.categoryName,
+        supplierName: d.suppliers?.name || item.supplierName
       };
 
       return ok(created);

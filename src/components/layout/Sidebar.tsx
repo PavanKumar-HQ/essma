@@ -97,7 +97,7 @@ export function Sidebar({ activeTab, onSelectTab }: SidebarProps) {
   ];
 
   return (
-    <aside className="w-64 h-[calc(100vh-2rem)] my-4 ml-4 glass-panel border-[var(--color-border-subtle)] text-[var(--color-text-main)] flex flex-col justify-between shrink-0 select-none overflow-hidden sticky top-4">
+    <aside className="w-64 h-[calc(100%-2rem)] my-4 ml-4 glass-panel border-[var(--color-border-subtle)] text-[var(--color-text-main)] flex flex-col justify-between shrink-0 select-none overflow-hidden sticky top-4">
       <div className="py-6 px-4 overflow-y-auto flex-1 space-y-8 scrollbar-hide">
         {groups.map((group) => (
           <div key={group.groupName}>

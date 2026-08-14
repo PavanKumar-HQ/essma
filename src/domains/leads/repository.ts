@@ -1,15 +1,18 @@
 import { createClient } from '@/lib/supabase/client';
+import { serverMutate } from '@/lib/supabase/admin';
 import { Lead } from '@/types';
 import { Result, ok, err } from '@/types/result';
 
 export class LeadRepository {
-  private static supabase = createClient();
+  private static get supabase() { return createClient(); }
 
   static async getAll(): Promise<Result<Lead[]>> {
     try {
-      const { data, error } = await this.supabase.from('leads').select('*');
+      const { data, error } = await this.supabase
+        .from('leads')
+        .select('*, profiles!leads_assigned_salesperson_id_fkey(full_name)');
       if (error) return err(new Error(error.message));
-      const leads: Lead[] = (data || []).map((item: Record<string, any>) => ({
+      const leads: Lead[] = (data || []).map((item: any) => ({
         id: item.id,
         leadNumber: item.lead_number,
         companyName: item.company_name,
@@ -20,11 +23,11 @@ export class LeadRepository {
         requirement: item.requirement,
         estimatedKva: item.estimated_kva,
         budget: item.budget,
-        source: item.source || 'Website',
-        status: item.status || 'New',
-        probability: item.probability || 50,
-        assignedSalespersonId: item.assigned_salesperson_id || 'usr-4',
-        assignedSalespersonName: 'Priya Sundaram',
+        source: item.source,
+        status: item.status,
+        probability: item.probability,
+        assignedSalespersonId: item.assigned_salesperson_id,
+        assignedSalespersonName: item.profiles?.full_name,
         expectedClosureDate: item.expected_closure_date,
         createdAt: item.created_at
       }));
@@ -37,9 +40,10 @@ export class LeadRepository {
   static async create(lead: Omit<Lead, 'id' | 'leadNumber' | 'createdAt'>): Promise<Result<Lead>> {
     try {
       const leadNumber = `LEAD-2026-${Math.floor(100 + Math.random() * 900)}`;
-      const { data, error } = await this.supabase
-        .from('leads')
-        .insert({
+
+      const { data, error } = await serverMutate.insert({
+        table: 'leads',
+        payload: {
           lead_number: leadNumber,
           company_name: lead.companyName,
           contact_person: lead.contactPerson,
@@ -51,30 +55,35 @@ export class LeadRepository {
           budget: lead.budget,
           source: lead.source,
           status: lead.status,
-          probability: lead.probability
-        })
-        .select()
-        .single();
-      if (error) return err(new Error(error.message));
+          probability: lead.probability,
+          assigned_salesperson_id: lead.assignedSalespersonId,
+          expected_closure_date: lead.expectedClosureDate,
+        }
+      });
+
+      if (error) return err(new Error(error));
+
+      const d: any = data;
       const created: Lead = {
-        id: data.id,
-        leadNumber: data.lead_number,
-        companyName: data.company_name,
-        contactPerson: data.contact_person,
-        email: data.email,
-        phone: data.phone,
-        city: data.city,
-        requirement: data.requirement,
-        estimatedKva: data.estimated_kva,
-        budget: data.budget,
-        source: data.source,
-        status: data.status,
-        probability: data.probability,
-        assignedSalespersonId: lead.assignedSalespersonId,
+        id: d.id,
+        leadNumber: d.lead_number,
+        companyName: d.company_name,
+        contactPerson: d.contact_person,
+        email: d.email,
+        phone: d.phone,
+        city: d.city,
+        requirement: d.requirement,
+        estimatedKva: d.estimated_kva,
+        budget: d.budget,
+        source: d.source,
+        status: d.status,
+        probability: d.probability,
+        assignedSalespersonId: d.assigned_salesperson_id,
         assignedSalespersonName: lead.assignedSalespersonName,
-        expectedClosureDate: data.expected_closure_date,
-        createdAt: data.created_at
+        expectedClosureDate: d.expected_closure_date,
+        createdAt: d.created_at
       };
+
       return ok(created);
     } catch (e: any) {
       return err(e instanceof Error ? e : new Error(String(e)));

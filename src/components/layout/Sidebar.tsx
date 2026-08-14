@@ -52,49 +52,75 @@ interface NavGroup {
   items: { id: NavTab; label: string; icon: React.ElementType }[];
 }
 
+import { useCrmStore } from '@/hooks/useCrm';
+import { RoleType } from '@/types';
+
+const ROLE_ALLOWED_TABS: Record<RoleType, NavTab[]> = {
+  'Super Admin': ['dashboard', 'customers', 'leads', 'quotations', 'orders', 'equipment', 'installations', 'tickets', 'amc', 'engineers', 'engineer-app', 'inventory', 'suppliers', 'invoices', 'reports', 'audit-logs'],
+  'Admin': ['dashboard', 'customers', 'leads', 'quotations', 'orders', 'equipment', 'installations', 'tickets', 'amc', 'engineers', 'engineer-app', 'inventory', 'suppliers', 'invoices', 'reports', 'audit-logs'],
+  'Sales': ['dashboard', 'customers', 'leads', 'quotations', 'orders', 'reports'],
+  'Service Manager': ['dashboard', 'customers', 'equipment', 'installations', 'tickets', 'amc', 'engineers', 'engineer-app', 'reports'],
+  'Engineer': ['tickets', 'engineer-app', 'equipment', 'installations'],
+  'Accounts': ['dashboard', 'customers', 'invoices', 'quotations', 'reports'],
+  'Inventory Manager': ['dashboard', 'inventory', 'suppliers', 'equipment']
+};
+
 export function Sidebar({ activeTab, onSelectTab }: SidebarProps) {
+  const { activeRole } = useCrmStore();
+  const allowed = ROLE_ALLOWED_TABS[activeRole] || ROLE_ALLOWED_TABS['Super Admin'];
+
   const groups: NavGroup[] = [
     {
       groupName: 'Operations',
-      items: [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'customers', label: 'Customers', icon: Users },
-        { id: 'leads', label: 'Leads Pipeline', icon: Target },
-        { id: 'quotations', label: 'Quotations', icon: FileText }
-      ]
+      items: (
+        [
+          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'customers', label: 'Customers', icon: Users },
+          { id: 'leads', label: 'Leads Pipeline', icon: Target },
+          { id: 'quotations', label: 'Quotations', icon: FileText }
+        ] as { id: NavTab; label: string; icon: React.ElementType }[]
+      ).filter(item => allowed.includes(item.id))
     },
     {
       groupName: 'Field Service',
-      items: [
-        { id: 'equipment', label: 'Power Assets (UPS)', icon: Zap },
-        { id: 'installations', label: 'Installations', icon: Wrench },
-        { id: 'tickets', label: 'Service Tickets', icon: LifeBuoy },
-        { id: 'amc', label: 'AMC & Maintenance', icon: FileCheck },
-        { id: 'engineers', label: 'Engineers Fleet', icon: UserCheck },
-        { id: 'engineer-app', label: 'Engineer Mobile View', icon: Wrench }
-      ]
+      items: (
+        [
+          { id: 'equipment', label: 'Power Assets (UPS)', icon: Zap },
+          { id: 'installations', label: 'Installations', icon: Wrench },
+          { id: 'tickets', label: 'Service Tickets', icon: LifeBuoy },
+          { id: 'amc', label: 'AMC & Maintenance', icon: FileCheck },
+          { id: 'engineers', label: 'Engineers Fleet', icon: UserCheck },
+          { id: 'engineer-app', label: 'Engineer Mobile View', icon: Wrench }
+        ] as { id: NavTab; label: string; icon: React.ElementType }[]
+      ).filter(item => allowed.includes(item.id))
     },
     {
       groupName: 'Warehouse',
-      items: [
-        { id: 'inventory', label: 'Stock & Batteries', icon: Boxes },
-        { id: 'suppliers', label: 'Suppliers & POs', icon: Truck }
-      ]
+      items: (
+        [
+          { id: 'inventory', label: 'Stock & Batteries', icon: Boxes },
+          { id: 'suppliers', label: 'Suppliers & POs', icon: Truck }
+        ] as { id: NavTab; label: string; icon: React.ElementType }[]
+      ).filter(item => allowed.includes(item.id))
     },
     {
       groupName: 'Finance & Analytics',
-      items: [
-        { id: 'invoices', label: 'GST Invoices', icon: Receipt },
-        { id: 'reports', label: 'Analytics & SLA', icon: BarChart3 }
-      ]
+      items: (
+        [
+          { id: 'invoices', label: 'GST Invoices', icon: Receipt },
+          { id: 'reports', label: 'Analytics & SLA', icon: BarChart3 }
+        ] as { id: NavTab; label: string; icon: React.ElementType }[]
+      ).filter(item => allowed.includes(item.id))
     },
     {
       groupName: 'Administration',
-      items: [
-        { id: 'audit-logs', label: 'Audit Logs', icon: History }
-      ]
+      items: (
+        [
+          { id: 'audit-logs', label: 'Audit Logs', icon: History }
+        ] as { id: NavTab; label: string; icon: React.ElementType }[]
+      ).filter(item => allowed.includes(item.id))
     }
-  ];
+  ].filter(group => group.items.length > 0);
 
   return (
     <aside className="w-64 h-[calc(100%-2rem)] my-4 ml-4 glass-panel border-[var(--color-border-subtle)] text-[var(--color-text-main)] flex flex-col justify-between shrink-0 select-none overflow-hidden sticky top-4">

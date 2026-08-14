@@ -7,7 +7,11 @@ import { Target, Plus, Search, DollarSign, ArrowRight, Zap, CheckCircle2 } from 
 import { Modal } from '@/components/shared/Modal';
 import { toast } from 'sonner';
 
-export function LeadsView() {
+interface LeadsViewProps {
+  onNavigate?: (tab: any) => void;
+}
+
+export function LeadsView({ onNavigate }: LeadsViewProps) {
   const { leads, convertLeadToQuote, createLead } = useCrmStore();
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -29,9 +33,11 @@ export function LeadsView() {
   const handleConvert = (leadId: string) => {
     const createdQuote = convertLeadToQuote(leadId);
     if (createdQuote) {
-      toast.success(`Lead converted to Quotation ${createdQuote.quoteNumber}!`);
+      toast.success(`Lead converted to Quotation ${createdQuote.quoteNumber}! Opening Quotations View...`);
+      if (onNavigate) onNavigate('quotations');
     } else {
       toast.success(`Lead converted to Draft Quotation in CRM Store!`);
+      if (onNavigate) onNavigate('quotations');
     }
   };
 

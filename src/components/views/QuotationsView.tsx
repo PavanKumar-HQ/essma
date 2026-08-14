@@ -228,7 +228,13 @@ export function QuotationsView() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2 pt-2 print:hidden">
+                <button
+                  onClick={() => window.print()}
+                  className="flex-1 glass-panel hover:bg-white/5 text-[var(--color-text-main)] font-bold py-2 rounded text-xs transition flex items-center justify-center gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5 text-[var(--color-primary)]" /> Print / Download PDF Bill
+                </button>
                 <button
                   onClick={handleConvertToOrder}
                   className="flex-1 bg-[var(--color-warning)] hover:bg-[#E06C00] text-white font-bold py-2 rounded text-xs transition shadow-sm"

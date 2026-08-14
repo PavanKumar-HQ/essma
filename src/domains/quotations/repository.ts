@@ -47,7 +47,6 @@ export class QuotationRepository {
         payload: {
           quote_number: quoteNumber,
           customer_id: quote.customerId,
-          customer_name: quote.customerName,
           gstin: quote.gstin,
           items: quote.items,
           subtotal: quote.subtotal,

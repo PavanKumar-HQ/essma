@@ -46,7 +46,7 @@ export default function Home() {
         <main className="flex-1 h-full bg-transparent overflow-y-auto p-4 sm:p-6 scrollbar-hide">
           {activeTab === 'dashboard' && <DashboardView onNavigate={(t) => setActiveTab(t)} />}
           {activeTab === 'customers' && <CustomersView />}
-          {activeTab === 'leads' && <LeadsView />}
+          {activeTab === 'leads' && <LeadsView onNavigate={(t) => setActiveTab(t)} />}
           {activeTab === 'quotations' && <QuotationsView />}
           {activeTab === 'orders' && <QuotationsView />}
           {activeTab === 'equipment' && <EquipmentView />}

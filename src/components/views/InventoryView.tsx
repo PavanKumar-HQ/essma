@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 import { Modal } from '@/components/shared/Modal';
 import { hasPermission } from '@/lib/permissions';
 import { useAppMutation } from '@/hooks/useAppMutation';
+import { toast } from 'sonner';
 
 export function InventoryView() {
   const { inventory, suppliers, updateInventoryStock, addInventoryItem, activeRole } = useCrmStore();
@@ -162,8 +163,10 @@ export function InventoryView() {
                       <div className="flex justify-center gap-1">
                         <button
                           onClick={() => {
-                            if (hasPermission('Super Admin', 'inventory.adjust')) { // TODO: use real role
-                              alert('Adjust modal opening...');
+                            if (hasPermission(activeRole, 'inventory.adjust')) {
+                              toast.info(`Quick Adjust triggered for SKU: ${item.sku}`);
+                            } else {
+                              toast.error(`Role '${activeRole}' does not have permission to adjust inventory.`);
                             }
                           }}
                           className="bg-[var(--color-surface-base)] hover:bg-slate-800 border border-[var(--color-border-subtle)] text-[var(--color-text-main)] px-2 py-1 rounded text-xs font-bold transition"
@@ -172,8 +175,10 @@ export function InventoryView() {
                         </button>
                         <button
                           onClick={() => {
-                            if (hasPermission('Super Admin', 'inventory.receive')) { // TODO: use real role
-                              alert('Receive modal opening...');
+                            if (hasPermission(activeRole, 'inventory.receive')) {
+                              toast.info(`Receive Stock workflow initiated for ${item.name}`);
+                            } else {
+                              toast.error(`Role '${activeRole}' does not have permission to receive stock.`);
                             }
                           }}
                           className="btn-accent px-2 py-1 rounded text-xs font-bold shadow-xs transition"

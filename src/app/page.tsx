@@ -21,10 +21,22 @@ import { SuppliersView } from '@/components/views/SuppliersView';
 import { ReportsView } from '@/components/views/ReportsView';
 import { AuditLogsView } from '@/components/views/AuditLogsView';
 
+import { useCrmStore } from '@/hooks/useCrm';
+import { ROLE_ALLOWED_TABS } from '@/components/layout/Sidebar';
+
 export default function Home() {
+  const { activeRole } = useCrmStore();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
+
+  // Auto-redirect active tab if switching to a role that doesn't permit the current tab
+  React.useEffect(() => {
+    const allowed = ROLE_ALLOWED_TABS[activeRole] || ROLE_ALLOWED_TABS['Super Admin'];
+    if (!allowed.includes(activeTab)) {
+      setActiveTab(allowed[0] || 'dashboard');
+    }
+  }, [activeRole, activeTab]);
 
   const handleSelectEntity = (tab: NavTab) => {
     setActiveTab(tab);

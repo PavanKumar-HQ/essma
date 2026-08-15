@@ -55,7 +55,7 @@ interface NavGroup {
 import { useCrmStore } from '@/hooks/useCrm';
 import { RoleType } from '@/types';
 
-const ROLE_ALLOWED_TABS: Record<RoleType, NavTab[]> = {
+export const ROLE_ALLOWED_TABS: Record<RoleType, NavTab[]> = {
   'Super Admin': ['dashboard', 'customers', 'leads', 'quotations', 'orders', 'equipment', 'installations', 'tickets', 'amc', 'engineers', 'engineer-app', 'inventory', 'suppliers', 'invoices', 'reports', 'audit-logs'],
   'Admin': ['dashboard', 'customers', 'leads', 'quotations', 'orders', 'equipment', 'installations', 'tickets', 'amc', 'engineers', 'engineer-app', 'inventory', 'suppliers', 'invoices', 'reports', 'audit-logs'],
   'Sales': ['dashboard', 'customers', 'leads', 'quotations', 'orders', 'reports'],

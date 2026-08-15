@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useCrmStore } from '@/hooks/useCrm';
 import { Invoice } from '@/types';
-import { Receipt, Plus, Download, Search, CheckCircle2, AlertCircle, DollarSign, Trash2, Printer, Share2, Mail, MessageSquare } from 'lucide-react';
+import { Receipt, Plus, Download, Search, CheckCircle2, AlertCircle, DollarSign, Trash2, Printer, Share2, Mail, MessageCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Modal } from '@/components/shared/Modal';
 import { toast } from 'sonner';
@@ -249,7 +249,7 @@ export function InvoicesView() {
                   }}
                   className="flex-1 min-w-[130px] bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold py-2 px-3 rounded text-xs transition flex items-center justify-center gap-1.5"
                 >
-                  <MessageSquare className="w-3.5 h-3.5 text-emerald-400" /> Share via WhatsApp
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-400" /> Share via WhatsApp
                 </button>
 
                 <button

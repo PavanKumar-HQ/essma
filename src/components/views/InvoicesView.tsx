@@ -3,9 +3,10 @@
 import React, { useState } from 'react';
 import { useCrmStore } from '@/hooks/useCrm';
 import { Invoice } from '@/types';
-import { Receipt, Plus, Download, Search, CheckCircle2, AlertCircle, DollarSign, Trash2 } from 'lucide-react';
+import { Receipt, Plus, Download, Search, CheckCircle2, AlertCircle, DollarSign, Trash2, Printer, Share2, Mail, MessageSquare } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Modal } from '@/components/shared/Modal';
+import { toast } from 'sonner';
 
 export function InvoicesView() {
   const { invoices, customers, createInvoice } = useCrmStore();
@@ -175,44 +176,108 @@ export function InvoicesView() {
         {/* Right Detail Pane */}
         <div className="lg:col-span-7 glass-panel border border-[var(--color-border-subtle)] rounded-[10px] p-5 space-y-4 shadow-sm ">
           {selectedInvoice ? (
-            <div className="bg-[var(--color-surface-base)] p-6 rounded-lg border border-[var(--color-border-subtle)] space-y-6 text-[var(--color-text-main)] text-xs ">
-              <div className="flex justify-between items-start border-b border-[var(--color-border-subtle)] pb-4">
-                <div>
-                  <div className="text-base font-black text-emerald-500 font-heading">TAX INVOICE</div>
-                  <div className="text-xs text-[var(--color-text-main)] font-bold">{selectedInvoice.customerName}</div>
-                  <div className="text-[10px] text-[var(--color-text-muted)]">GSTIN: {customers.find(c => c.id === selectedInvoice.customerId)?.gstNumber || 'N/A'}</div>
-                </div>
-
-                <div className="text-right">
-                  <div className="text-sm font-bold text-[var(--color-warning)]">{selectedInvoice.invoiceNumber}</div>
-                  <div className="text-[10px] text-[var(--color-text-muted)]">Issue Date: {selectedInvoice.invoiceDate}</div>
-                  <div className="text-[10px] text-[var(--color-text-muted)]">Due Date: {selectedInvoice.dueDate}</div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="font-bold text-[var(--color-text-muted)] uppercase text-[10px]">Invoice Line Items</div>
-                {(selectedInvoice.invoiceItems || []).map((item: any, idx: number) => (
-                  <div key={idx} className="flex justify-between items-center glass-panel p-2.5 rounded border border-[var(--color-border-subtle)] text-xs shadow-xs">
-                    <div>
-                      <div className="font-bold text-[var(--color-text-main)]">{item.description || item.item_description || 'Item'}</div>
-                      <div className="text-[10px] text-[var(--color-text-muted)]">Qty: {item.quantity} × ₹{(item.unitPrice || item.unit_price || 0).toLocaleString('en-IN')}</div>
-                    </div>
-                    <div className="font-bold text-emerald-500">₹{(item.total || item.total_price || 0).toLocaleString('en-IN')}</div>
+            <div className="space-y-4">
+              <div className="print-area bg-[var(--color-surface-base)] p-6 rounded-lg border border-[var(--color-border-subtle)] space-y-6 text-[var(--color-text-main)] text-xs shadow-md">
+                <div className="flex justify-between items-start border-b border-[var(--color-border-subtle)] pb-4">
+                  <div>
+                    <div className="text-base font-black text-emerald-500 font-heading">TAX INVOICE</div>
+                    <div className="text-xs text-[var(--color-text-main)] font-bold">{selectedInvoice.customerName}</div>
+                    <div className="text-[10px] text-[var(--color-text-muted)]">GSTIN: {customers.find(c => c.id === selectedInvoice.customerId)?.gstNumber || 'N/A'}</div>
                   </div>
-                ))}
+
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-[var(--color-warning)]">{selectedInvoice.invoiceNumber}</div>
+                    <div className="text-[10px] text-[var(--color-text-muted)]">Issue Date: {selectedInvoice.invoiceDate}</div>
+                    <div className="text-[10px] text-[var(--color-text-muted)]">Due Date: {selectedInvoice.dueDate}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="font-bold text-[var(--color-text-muted)] uppercase text-[10px]">Invoice Line Items</div>
+                  {(selectedInvoice.invoiceItems || []).map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between items-center glass-panel p-2.5 rounded border border-[var(--color-border-subtle)] text-xs shadow-xs">
+                      <div>
+                        <div className="font-bold text-[var(--color-text-main)]">{item.description || item.item_description || 'Item'}</div>
+                        <div className="text-[10px] text-[var(--color-text-muted)]">Qty: {item.quantity} × ₹{(item.unitPrice || item.unit_price || 0).toLocaleString('en-IN')}</div>
+                      </div>
+                      <div className="font-bold text-emerald-500">₹{(item.total || item.total_price || 0).toLocaleString('en-IN')}</div>
+                    </div>
+                  ))}
+                  {(!selectedInvoice.invoiceItems || selectedInvoice.invoiceItems.length === 0) && (
+                    <div className="glass-panel p-2.5 rounded border border-[var(--color-border-subtle)] text-xs flex justify-between">
+                      <div>
+                        <div className="font-bold text-[var(--color-text-main)]">UPS System Servicing & Maintenance Charge</div>
+                        <div className="text-[10px] text-[var(--color-text-muted)]">Qty: 1 × ₹{(selectedInvoice.subtotal || 0).toLocaleString('en-IN')}</div>
+                      </div>
+                      <div className="font-bold text-emerald-500">₹{(selectedInvoice.subtotal || 0).toLocaleString('en-IN')}</div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="glass-panel p-3 rounded border border-[var(--color-border-subtle)] space-y-1 text-right text-xs">
+                  <div>Subtotal: ₹{(selectedInvoice.subtotal || 0).toLocaleString('en-IN')}</div>
+                  <div>CGST + SGST (18%): ₹{(selectedInvoice.taxAmount || 0).toLocaleString('en-IN')}</div>
+                  <div className="text-sm font-black text-emerald-500 border-t border-[var(--color-border-subtle)] pt-1 mt-1">
+                    Grand Total: ₹{(selectedInvoice.totalAmount || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
               </div>
 
-              <div className="glass-panel p-3 rounded border border-[var(--color-border-subtle)] space-y-1 text-right text-xs">
-                <div>Subtotal: ₹{(selectedInvoice.subtotal || 0).toLocaleString('en-IN')}</div>
-                <div>CGST + SGST (18%): ₹{(selectedInvoice.taxAmount || 0).toLocaleString('en-IN')}</div>
-                <div className="text-sm font-black text-emerald-500 border-t border-[var(--color-border-subtle)] pt-1 mt-1">
-                  Grand Total: ₹{(selectedInvoice.totalAmount || 0).toLocaleString('en-IN')}
-                </div>
+              {/* Action Toolbar: Print A4 PDF / WhatsApp / Email */}
+              <div className="flex flex-wrap gap-2 pt-1 print:hidden">
+                <button
+                  onClick={() => window.print()}
+                  className="flex-1 min-w-[130px] glass-panel hover:bg-white/5 text-[var(--color-text-main)] font-bold py-2 px-3 rounded text-xs transition flex items-center justify-center gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5 text-[var(--color-primary)]" /> Print / Save A4 PDF
+                </button>
+
+                <button
+                  onClick={() => {
+                    const cust = customers.find(c => c.id === selectedInvoice.customerId);
+                    const phone = (cust?.phone || '').replace(/[^0-9]/g, '');
+                    const message = encodeURIComponent(
+                      `Hello ${selectedInvoice.customerName},\n\n` +
+                      `Here is your Tax Invoice *${selectedInvoice.invoiceNumber}* from ESSMA Power Systems.\n` +
+                      `• Total Amount: ₹${(selectedInvoice.totalAmount || 0).toLocaleString('en-IN')}\n` +
+                      `• Due Date: ${selectedInvoice.dueDate}\n\n` +
+                      `Thank you for choosing ESSMA Power Infrastructure!`
+                    );
+                    const whatsappUrl = phone ? `https://wa.me/${phone}?text=${message}` : `https://wa.me/?text=${message}`;
+                    window.open(whatsappUrl, '_blank');
+                    toast.success('Opening WhatsApp share link...');
+                  }}
+                  className="flex-1 min-w-[130px] bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold py-2 px-3 rounded text-xs transition flex items-center justify-center gap-1.5"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-emerald-400" /> Share via WhatsApp
+                </button>
+
+                <button
+                  onClick={() => {
+                    const cust = customers.find(c => c.id === selectedInvoice.customerId);
+                    const email = cust?.email || '';
+                    const subject = encodeURIComponent(`Tax Invoice ${selectedInvoice.invoiceNumber} - ESSMA Power Systems`);
+                    const body = encodeURIComponent(
+                      `Dear ${selectedInvoice.customerName},\n\n` +
+                      `Please find attached/referenced the Tax Invoice ${selectedInvoice.invoiceNumber} for your recent service and power assets.\n\n` +
+                      `Invoice Details:\n` +
+                      `• Invoice #: ${selectedInvoice.invoiceNumber}\n` +
+                      `• Amount: ₹${(selectedInvoice.totalAmount || 0).toLocaleString('en-IN')}\n` +
+                      `• Issue Date: ${selectedInvoice.invoiceDate}\n` +
+                      `• Due Date: ${selectedInvoice.dueDate}\n\n` +
+                      `Best regards,\nESSMA Power Systems Team`
+                    );
+                    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+                    toast.success('Opening Email Client...');
+                  }}
+                  className="flex-1 min-w-[130px] bg-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]/30 font-bold py-2 px-3 rounded text-xs transition flex items-center justify-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5 text-[var(--color-primary)]" /> Email PDF Invoice
+                </button>
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-500">Select an invoice</div>
+            <div className="p-8 text-center text-slate-500">Select an invoice to inspect or export</div>
           )}
         </div>
       </div>

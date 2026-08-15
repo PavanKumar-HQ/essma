@@ -166,3 +166,50 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
+
+/* A4 Print Styles */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+  
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  .print\:hidden,
+  header,
+  aside,
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-area {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+    border: none !important;
+  }
+
+  .print-area * {
+    color: black !important;
+    border-color: #e5e7eb !important;
+    background: transparent !important;
+  }
+  
+  .print-area .text-emerald-500,
+  .print-area .text-emerald-600 {
+    color: #059669 !important;
+  }
+
+  .print-area .text-\[var\(--color-warning\)\] {
+    color: #d97706 !important;
+  }
+}

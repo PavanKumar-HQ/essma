@@ -29,6 +29,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Auto-redirect active tab if switching to a role that doesn't permit the current tab
   React.useEffect(() => {
@@ -40,6 +41,7 @@ export default function Home() {
 
   const handleSelectEntity = (tab: NavTab) => {
     setActiveTab(tab);
+    setIsMobileSidebarOpen(false);
   };
 
   return (
@@ -48,14 +50,23 @@ export default function Home() {
       <Header
         onOpenCommandPalette={() => setIsCommandOpen(true)}
         onOpenQrModal={() => setIsQrOpen(true)}
+        onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Grouped Sidebar */}
-        <Sidebar activeTab={activeTab} onSelectTab={(tab) => setActiveTab(tab)} />
+        <Sidebar 
+          activeTab={activeTab} 
+          onSelectTab={(tab) => {
+            setActiveTab(tab);
+            setIsMobileSidebarOpen(false);
+          }} 
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        />
 
         {/* Main Content Workspace */}
-        <main className="flex-1 h-full bg-transparent overflow-y-auto p-4 sm:p-6 scrollbar-hide">
+        <main className="flex-1 w-full h-full bg-transparent overflow-y-auto p-4 sm:p-6 scrollbar-hide">
           {activeTab === 'dashboard' && <DashboardView onNavigate={(t) => setActiveTab(t)} />}
           {activeTab === 'customers' && <CustomersView />}
           {activeTab === 'leads' && <LeadsView onNavigate={(t) => setActiveTab(t)} />}

@@ -17,9 +17,10 @@ import {
 } from 'lucide-react';
 import { Modal } from '@/components/shared/Modal';
 import { toast } from 'sonner';
+import { hasPermission } from '@/lib/permissions';
 
 export function QuotationsView() {
-  const { quotations, customers, createQuotation, updateQuotationStatus } = useCrmStore();
+  const { activeRole, quotations, customers, createQuotation, updateQuotationStatus } = useCrmStore();
   const [selectedQuote, setSelectedQuote] = useState<Quotation | null>(quotations[0] || null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -129,12 +130,14 @@ export function QuotationsView() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-[var(--color-warning)] hover:bg-[#E06C00] text-white font-bold text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition shadow-sm "
-        >
-          <Plus className="w-4 h-4" /> Create New Quote
-        </button>
+        {hasPermission(activeRole, 'quote.create') && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-[var(--color-warning)] hover:bg-[#E06C00] text-white font-bold text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition shadow-sm "
+          >
+            <Plus className="w-4 h-4" /> Create New Quote
+          </button>
+        )}
       </div>
 
       {/* Main Grid */}

@@ -18,18 +18,23 @@ export type ActionType =
   | 'service.close'
   | 'finance.read'
   | 'finance.create_invoice'
-  | 'finance.record_payment';
+  | 'finance.record_payment'
+  | 'customer.create'
+  | 'lead.create'
+  | 'quote.create';
 
 const ROLE_PERMISSIONS: Record<RoleType, ActionType[]> = {
   'Super Admin': [
     'inventory.read', 'inventory.create', 'inventory.update', 'inventory.receive', 'inventory.issue', 'inventory.return', 'inventory.transfer', 'inventory.adjust',
     'service.read', 'service.create', 'service.assign', 'service.reassign', 'service.dispatch', 'service.complete', 'service.close',
-    'finance.read', 'finance.create_invoice', 'finance.record_payment'
+    'finance.read', 'finance.create_invoice', 'finance.record_payment',
+    'customer.create', 'lead.create', 'quote.create'
   ],
   'Admin': [
     'inventory.read', 'inventory.create', 'inventory.update', 'inventory.receive', 'inventory.issue', 'inventory.return', 'inventory.transfer', 'inventory.adjust',
     'service.read', 'service.create', 'service.assign', 'service.reassign', 'service.dispatch', 'service.complete', 'service.close',
-    'finance.read', 'finance.create_invoice', 'finance.record_payment'
+    'finance.read', 'finance.create_invoice', 'finance.record_payment',
+    'customer.create', 'lead.create', 'quote.create'
   ],
   'Inventory Manager': [
     'inventory.read', 'inventory.create', 'inventory.update', 'inventory.receive', 'inventory.issue', 'inventory.return', 'inventory.transfer', 'inventory.adjust'
@@ -46,7 +51,7 @@ const ROLE_PERMISSIONS: Record<RoleType, ActionType[]> = {
     'finance.read', 'finance.create_invoice', 'finance.record_payment'
   ],
   'Sales': [
-    'inventory.read', 'finance.read'
+    'inventory.read', 'finance.read', 'customer.create', 'lead.create', 'quote.create'
   ]
 };
 

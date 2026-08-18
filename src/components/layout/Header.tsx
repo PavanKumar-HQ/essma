@@ -11,12 +11,14 @@ import {
   AlertTriangle,
   QrCode,
   Zap,
-  ChevronDown
+  ChevronDown,
+  Menu
 } from 'lucide-react';
 
 interface HeaderProps {
   onOpenCommandPalette: () => void;
   onOpenQrModal: () => void;
+  onToggleSidebar?: () => void;
 }
 
 const ROLES: RoleType[] = [
@@ -29,7 +31,7 @@ const ROLES: RoleType[] = [
   'Inventory Manager'
 ];
 
-export function Header({ onOpenCommandPalette, onOpenQrModal }: HeaderProps) {
+export function Header({ onOpenCommandPalette, onOpenQrModal, onToggleSidebar }: HeaderProps) {
   const { activeRole, setActiveRole, notifications, markNotificationAsRead } = useCrmStore();
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [showNotifDrawer, setShowNotifDrawer] = useState(false);
@@ -37,15 +39,18 @@ export function Header({ onOpenCommandPalette, onOpenQrModal }: HeaderProps) {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <header className="h-16 glass-panel border-b-0 rounded-none rounded-b-xl border-[var(--color-border-subtle)] text-white flex items-center justify-between px-6 sticky top-0 z-40 mx-4 mt-2">
+    <header className="h-16 glass-panel border-b-0 rounded-none rounded-b-xl border-[var(--color-border-subtle)] text-white flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40 mx-2 sm:mx-4 mt-2">
       {/* Left: ESSMA Brand & Search Bar */}
-      <div className="flex items-center space-x-6">
-        <div className="flex items-center space-x-3 group cursor-pointer">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center font-bold text-white shadow-lg shadow-[var(--color-primary-glow)] transition-transform duration-300 group-hover:scale-105">
-            <Zap className="w-5 h-5 fill-white text-white" />
+      <div className="flex items-center space-x-3 sm:space-x-6">
+        <button onClick={onToggleSidebar} className="md:hidden p-2 hover:bg-white/5 rounded-lg transition-colors">
+          <Menu className="w-5 h-5 text-white" />
+        </button>
+        <div className="flex items-center space-x-2 sm:space-x-3 group cursor-pointer">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center font-bold text-white shadow-lg shadow-[var(--color-primary-glow)] transition-transform duration-300 group-hover:scale-105">
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5 fill-white text-white" />
           </div>
           <div>
-            <div className="font-heading font-extrabold text-sm tracking-wide text-white flex items-center gap-2">
+            <div className="font-heading font-extrabold text-xs sm:text-sm tracking-wide text-white flex items-center gap-2">
               ESSMA OS 
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] border border-[var(--color-primary)]/30 font-mono font-medium">v4.2 PRO</span>
             </div>

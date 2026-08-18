@@ -7,9 +7,10 @@ import { Receipt, Plus, Download, Search, CheckCircle2, AlertCircle, DollarSign,
 import * as XLSX from 'xlsx';
 import { Modal } from '@/components/shared/Modal';
 import { toast } from 'sonner';
+import { hasPermission } from '@/lib/permissions';
 
 export function InvoicesView() {
-  const { invoices, customers, createInvoice } = useCrmStore();
+  const { activeRole, invoices, customers, createInvoice } = useCrmStore();
   const [search, setSearch] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(invoices[0] || null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -114,12 +115,14 @@ export function InvoicesView() {
           >
             <Download className="w-3.5 h-3.5 text-[var(--color-primary)]" /> Export CSV
           </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-accent text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition shadow-sm "
-          >
-            <Plus className="w-4 h-4" /> Generate Invoice
-          </button>
+          {hasPermission(activeRole, 'finance.create_invoice') && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="btn-accent text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition shadow-sm "
+            >
+              <Plus className="w-4 h-4" /> Generate Invoice
+            </button>
+          )}
         </div>
       </div>
 

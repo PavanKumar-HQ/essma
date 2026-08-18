@@ -45,6 +45,8 @@ export type NavTab =
 interface SidebarProps {
   activeTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 interface NavGroup {
@@ -65,7 +67,7 @@ export const ROLE_ALLOWED_TABS: Record<RoleType, NavTab[]> = {
   'Inventory Manager': ['dashboard', 'inventory', 'suppliers', 'equipment']
 };
 
-export function Sidebar({ activeTab, onSelectTab }: SidebarProps) {
+export function Sidebar({ activeTab, onSelectTab, isMobileOpen, onCloseMobile }: SidebarProps) {
   const { activeRole } = useCrmStore();
   const allowed = ROLE_ALLOWED_TABS[activeRole] || ROLE_ALLOWED_TABS['Super Admin'];
 
@@ -123,45 +125,62 @@ export function Sidebar({ activeTab, onSelectTab }: SidebarProps) {
   ].filter(group => group.items.length > 0);
 
   return (
-    <aside className="w-64 h-[calc(100%-2rem)] my-4 ml-4 glass-panel border-[var(--color-border-subtle)] text-[var(--color-text-main)] flex flex-col justify-between shrink-0 select-none overflow-hidden sticky top-4">
-      <div className="py-6 px-4 overflow-y-auto flex-1 space-y-8 scrollbar-hide">
-        {groups.map((group) => (
-          <div key={group.groupName}>
-            <div className="px-3 mb-3 text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-dim)] font-heading">
-              {group.groupName}
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+          onClick={onCloseMobile}
+        />
+      )}
+      <aside className={`
+        fixed md:sticky top-16 md:top-4 z-50 md:z-auto
+        w-64 h-[calc(100%-4rem)] md:h-[calc(100%-2rem)] 
+        my-4 mx-4 md:ml-4 
+        glass-panel border-[var(--color-border-subtle)] text-[var(--color-text-main)] 
+        flex flex-col justify-between shrink-0 select-none overflow-hidden 
+        transition-transform duration-300 ease-in-out
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-[120%] md:translate-x-0'}
+      `}>
+        <div className="py-6 px-4 overflow-y-auto flex-1 space-y-8 scrollbar-hide">
+          {groups.map((group) => (
+            <div key={group.groupName}>
+              <div className="px-3 mb-3 text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-dim)] font-heading">
+                {group.groupName}
+              </div>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => onSelectTab(item.id)}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                        isActive
+                          ? 'bg-gradient-to-r from-[var(--color-primary)]/10 to-transparent text-[var(--color-primary)] shadow-[inset_2px_0_0_0_var(--color-primary)]'
+                          : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-dim)] group-hover:text-[var(--color-text-muted)]'}`} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="space-y-1">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onSelectTab(item.id)}
-                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                      isActive
-                        ? 'bg-gradient-to-r from-[var(--color-primary)]/10 to-transparent text-[var(--color-primary)] shadow-[inset_2px_0_0_0_var(--color-primary)]'
-                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-dim)] group-hover:text-[var(--color-text-muted)]'}`} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {/* System Status Footer */}
-      <div className="p-4 border-t border-[var(--color-border-subtle)] bg-white/5 backdrop-blur-md text-[11px] text-[var(--color-text-muted)] flex items-center justify-between">
-        <span className="flex items-center gap-2 font-medium">
-          <span className="w-2 h-2 rounded-full bg-[var(--color-accent)] shadow-[0_0_8px_var(--color-accent)] animate-pulse" />
-          <span>System Status</span>
-        </span>
-        <span className="text-[var(--color-accent)] font-semibold px-2 py-0.5 rounded-full bg-[var(--color-accent)]/10">Online</span>
-      </div>
-    </aside>
+        {/* System Status Footer */}
+        <div className="p-4 border-t border-[var(--color-border-subtle)] bg-white/5 backdrop-blur-md text-[11px] text-[var(--color-text-muted)] flex items-center justify-between">
+          <span className="flex items-center gap-2 font-medium">
+            <span className="w-2 h-2 rounded-full bg-[var(--color-accent)] shadow-[0_0_8px_var(--color-accent)] animate-pulse" />
+            <span>System Status</span>
+          </span>
+          <span className="text-[var(--color-accent)] font-semibold px-2 py-0.5 rounded-full bg-[var(--color-accent)]/10">Online</span>
+        </div>
+      </aside>
+    </>
   );
 }

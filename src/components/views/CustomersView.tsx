@@ -6,9 +6,10 @@ import { useAppMutation } from '@/hooks/useAppMutation';
 import { Users, Plus, Building, MapPin, Zap, Search, Phone, Mail } from 'lucide-react';
 import { Modal } from '@/components/shared/Modal';
 import { Customer } from '@/types';
+import { hasPermission } from '@/lib/permissions';
 
 export function CustomersView() {
-  const { customers, equipment, invoices, createCustomer, loading: isLoadingCustomers } = useCrmStore();
+  const { activeRole, customers, equipment, invoices, createCustomer, loading: isLoadingCustomers } = useCrmStore();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -85,12 +86,14 @@ export function CustomersView() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-[var(--color-warning)] hover:bg-[#E06C00] text-white font-bold text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition shadow-sm "
-        >
-          <Plus className="w-4 h-4" /> Add Customer Account
-        </button>
+        {hasPermission(activeRole, 'customer.create') && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-[var(--color-warning)] hover:bg-[#E06C00] text-white font-bold text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition shadow-sm "
+          >
+            <Plus className="w-4 h-4" /> Add Customer Account
+          </button>
+        )}
       </div>
 
       {/* Split Pane */}

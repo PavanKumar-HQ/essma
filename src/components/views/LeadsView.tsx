@@ -7,12 +7,14 @@ import { Target, Plus, Search, DollarSign, ArrowRight, Zap, CheckCircle2 } from 
 import { Modal } from '@/components/shared/Modal';
 import { toast } from 'sonner';
 
+import { hasPermission } from '@/lib/permissions';
+
 interface LeadsViewProps {
   onNavigate?: (tab: any) => void;
 }
 
 export function LeadsView({ onNavigate }: LeadsViewProps) {
-  const { leads, convertLeadToQuote, createLead } = useCrmStore();
+  const { activeRole, leads, convertLeadToQuote, createLead } = useCrmStore();
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -75,12 +77,14 @@ export function LeadsView({ onNavigate }: LeadsViewProps) {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-accent text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition shadow-sm "
-        >
-          <Plus className="w-4 h-4" /> Add Sales Opportunity
-        </button>
+        {hasPermission(activeRole, 'lead.create') && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn-accent text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition shadow-sm "
+          >
+            <Plus className="w-4 h-4" /> Add Sales Opportunity
+          </button>
+        )}
       </div>
 
       {/* Leads Table */}
